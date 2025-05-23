@@ -16,15 +16,17 @@ let connections;
 
 function preload() {
   // Load the bodyPose model
+  console.log("Loading BodyPose model...");
   bodyPose = ml5.bodyPose();
+  console.log("done");
 }
 
 function setup() {
-  createCanvas(640, 480);
+  createCanvas(windowWidth, windowHeight);
 
   // Create the video and hide it
   video = createCapture(VIDEO);
-  video.size(640, 480);
+  video.size(width, height);
   video.hide();
 
   // Start detecting poses in the webcam video
@@ -34,11 +36,34 @@ function setup() {
 }
 
 function draw() {
-  console.log("draw");
-  
   // Draw the webcam video
+  background(10, 0, 20);
   image(video, 0, 0, width, height);
+  drawSkeleton();
 
+  const date = new Date();
+
+  // TODO figure out why 2 huge delays, one when loading, other before camera feed starts
+  // for profiling:
+  // console.log(
+  //   date.getSeconds() + "." + date.getMilliseconds(),
+  //   video.width,
+  //   video.height,
+  //   width,
+  //   height
+  // );
+
+  textSize(20);
+  textAlign(CENTER, CENTER);
+  text(`width: ${video.width} height: ${video.height}`, width / 2, height / 2);
+}
+
+// Callback function for when bodyPose outputs data
+function gotPoses(results) {
+  poses = results;
+}
+
+function drawSkeleton() {
   // Draw the skeleton connections
   for (let i = 0; i < poses.length; i++) {
     let pose = poses[i];
@@ -69,10 +94,4 @@ function draw() {
       }
     }
   }
-}
-
-// Callback function for when bodyPose outputs data
-function gotPoses(results) {
-  // Save the output to the poses variable
-  poses = results;
 }
