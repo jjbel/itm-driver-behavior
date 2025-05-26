@@ -72,9 +72,20 @@ class State {
     this.infoElement.html(dims);
   }
 
+  // TODO should implement CONTAIN functionality of image. its not a simple scaling.
+  transformX(x) {
+    return map(x, 0, this.video.width, 0, width);
+  }
+
+  transformY(y) {
+    return map(y, 0, this.video.height, 0, height);
+  }
+
   drawSkeleton() {
-    // Draw the skeleton connections
-    console.log(this.poses);
+    if (!this.poses) {
+      return; // No poses detected, nothing to draw
+    }
+
     for (const pose of this.poses) {
       for (let j = 0; j < this.connections.length; j++) {
         let pointAIndex = this.connections[j][0];
@@ -88,8 +99,13 @@ class State {
         ) {
           stroke(255, 0, 0);
           strokeWeight(2);
-          line(pointA.x, pointA.y, pointB.x, pointB.y);
-          console.log(pointA.x, pointA.y, pointB.x, pointB.y);
+          line(
+            this.transformX(pointA.x),
+            this.transformY(pointA.y),
+            this.transformX(pointB.x),
+            this.transformY(pointB.y)
+          );
+          //   console.log(pointA.x, pointA.y, pointB.x, pointB.y);
         }
       }
     }
@@ -101,7 +117,7 @@ class State {
         if (keypoint.confidence > this.CONFIDENCE_THRESHOLD) {
           fill(0, 255, 0);
           noStroke();
-          circle(keypoint.x, keypoint.y, 10);
+          circle(this.transformX(keypoint.x), this.transformY(keypoint.y), 10);
         }
       }
     }
