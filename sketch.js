@@ -24,15 +24,8 @@ function preload() {
 function setup() {
   createCanvas(windowWidth, windowHeight);
 
-  const constraints = {
-    video: {
-      facingMode: { exact: "environment" }, // Use "environment" to request the rear camera
-    },
-    audio: false,
-  };
-
   // Create the video and hide it
-  video = createCapture(constraints);
+  video = createCapture(VIDEO);
   video.size(width, height);
   video.hide();
 
