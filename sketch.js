@@ -14,6 +14,8 @@ let bodyPose;
 let poses = [];
 let connections;
 
+let infoElement;
+
 function preload() {
   // Load the bodyPose model
   console.log("Loading BodyPose model...");
@@ -24,10 +26,27 @@ function preload() {
 function setup() {
   createCanvas(windowWidth, windowHeight);
 
+  // using ideal: max is "not officially supported" according to ChatGPT, but it works in Chrome on Windows
+  // In Firefox: DOMException: Failed to allocate videosource
+  // using 4096x2160 gives full HD resolution on laptop, but on Pixel it chooses the rear camera. Could further enforce using the front camera
+
+  // by default, the resolution is 640x480, with cropped field of view
+
+  const constraints = {
+    video: {
+      width: { ideal: 1920 },
+      height: { ideal: 1080 },
+    },
+    audio: false,
+  };
+  video = createCapture(constraints);
+
+  // video = createCapture(VIDEO);
+
   // Create the video and hide it
-  video = createCapture(VIDEO);
-  video.size(width, height);
   video.hide();
+
+  infoElement = select("#info");
 
   // Start detecting poses in the webcam video
   bodyPose.detectStart(video, gotPoses);
@@ -38,24 +57,26 @@ function setup() {
 function draw() {
   // Draw the webcam video
   background(10, 0, 20);
-  image(video, 0, 0, width, height);
+  // scale(-1, 1);
+  // image(video, 0, 0);
+  image(
+    video,
+    0,
+    0,
+    width,
+    height,
+    0,
+    0,
+    video.width,
+    video.height,
+    CONTAIN,
+    LEFT,
+    TOP
+  );
   drawSkeleton();
 
-  const date = new Date();
-
-  // TODO figure out why 2 huge delays, one when loading, other before camera feed starts
-  // for profiling:
-  // console.log(
-  //   date.getSeconds() + "." + date.getMilliseconds(),
-  //   video.width,
-  //   video.height,
-  //   width,
-  //   height
-  // );
-
-  textSize(20);
-  textAlign(CENTER, CENTER);
-  text(`width: ${video.width} height: ${video.height}`, width / 2, height / 2);
+  const dims = `video: ${video.width}x${video.height}\ncanvas: ${width}x${height}\nWindow: ${windowWidth}x${windowHeight}`;
+  infoElement.html(dims);
 }
 
 // Callback function for when bodyPose outputs data
