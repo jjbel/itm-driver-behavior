@@ -8,7 +8,7 @@ class State {
 
   setup() {
     // createCanvas(windowWidth, windowHeight);
-    createCanvas(1920, 1080);
+    createCanvas(640, 630, WEBGL);
 
     // using ideal: max is "not officially supported" according to ChatGPT, but it works in Chrome on Windows
     // In Firefox: DOMException: Failed to allocate videosource
@@ -28,7 +28,7 @@ class State {
     // video = createCapture(VIDEO);
 
     // Create the video and hide it
-    this.video.hide();
+    // this.video.hide();
 
     this.infoElement = select("#info");
     this.warningElement = select("#warning");
@@ -47,24 +47,25 @@ class State {
   }
 
   draw() {
-    // Draw the webcam video
+    scale(height / 2);
+    orbitControl();
     background(10, 0, 20);
     // scale(-1, 1);
     // image(video, 0, 0);
-    image(
-      this.video,
-      0,
-      0,
-      width,
-      height,
-      0,
-      0,
-      this.video.width,
-      this.video.height,
-      CONTAIN,
-      LEFT,
-      TOP
-    );
+    // image(
+    //   this.video,
+    //   0,
+    //   0,
+    //   width,
+    //   height,
+    //   0,
+    //   0,
+    //   this.video.width,
+    //   this.video.height,
+    //   CONTAIN,
+    //   LEFT,
+    //   TOP
+    // );
 
     this.drawSkeleton();
 
@@ -90,37 +91,47 @@ class State {
       return; // No pose detected, nothing to draw
     }
 
-    for (let j = 0; j < this.connections.length; j++) {
-      const pointAIndex = this.connections[j][0];
-      const pointBIndex = this.connections[j][1];
-      const pointA = this.pose.keypoints[pointAIndex];
-      const pointB = this.pose.keypoints[pointBIndex];
+    for (const [pointAIndex, pointBIndex] of this.connections) {
+      const pointA = this.pose.keypoints3D[pointAIndex];
+      const pointB = this.pose.keypoints3D[pointBIndex];
       // Only draw a line if both points are confident enough
       if (
         pointA.confidence > this.CONFIDENCE_THRESHOLD &&
         pointB.confidence > this.CONFIDENCE_THRESHOLD
       ) {
-        stroke(255, 0, 0);
-        strokeWeight(2);
-        line(
-          this.transformX(pointA.x),
-          this.transformY(pointA.y),
-          this.transformX(pointB.x),
-          this.transformY(pointB.y)
-        );
+        stroke(0, 255, 255);
+        strokeWeight(4);
+        beginShape();
+        vertex(pointA.x, pointA.y, pointA.z);
+        vertex(pointB.x, pointB.y, pointB.z);
+        endShape();
         //   console.log(pointA.x, pointA.y, pointB.x, pointB.y);
       }
     }
 
-    // Draw all the tracked landmark points
-    for (let j = 0; j < this.pose.keypoints.length; j++) {
-      const keypoint = this.pose.keypoints[j];
-      if (keypoint.confidence > this.CONFIDENCE_THRESHOLD) {
-        fill(0, 255, 0);
-        noStroke();
-        circle(this.transformX(keypoint.x), this.transformY(keypoint.y), 10);
+    // Draw keypoints as rotating 3D boxes
+    for (let i = 0; i < this.pose.keypoints.length; i++) {
+      let keypoint = this.pose.keypoints3D[i];
+      stroke(255, 0, 255);
+      strokeWeight(1);
+      // fill(255, 150);
+
+      if (keypoint.confidence > 0.1) {
+        push();
+        translate(keypoint.x, keypoint.y, keypoint.z);
+        box(0.06);
+        pop();
       }
     }
+
+    // Draw a ground plane
+    stroke(255);
+    rectMode(CENTER);
+    strokeWeight(1);
+    fill(255, 100);
+    translate(0, 1);
+    rotateX(PI / 2);
+    square(0, 0, 2);
   }
 
   keypointPos(name) {
