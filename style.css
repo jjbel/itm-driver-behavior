@@ -9,7 +9,15 @@ canvas {
 
 h1 {
   font-family: sans-serif;
-  position: absolute;
+  position: fixed;
   background-color: white;
   padding: 10px;
+}
+
+#info {
+  top: 20px;
+}
+
+#warning {
+  top: 160px;
 }
