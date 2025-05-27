@@ -8,7 +8,8 @@ class State {
 
   setup() {
     // createCanvas(windowWidth, windowHeight);
-    createCanvas(640, 630, WEBGL);
+    const size = min(windowWidth, windowHeight);
+    createCanvas(size, size, WEBGL);
 
     // using ideal: max is "not officially supported" according to ChatGPT, but it works in Chrome on Windows
     // In Firefox: DOMException: Failed to allocate videosource
@@ -25,11 +26,6 @@ class State {
     };
     this.video = createCapture(constraints);
 
-    // video = createCapture(VIDEO);
-
-    // Create the video and hide it
-    // this.video.hide();
-
     this.infoElement = select("#info");
     this.warningElement = select("#warning");
 
@@ -37,7 +33,6 @@ class State {
     this.bodyPose.detectStart(this.video, (poses) => {
       //   TODO could choose pose with highest confidence
       this.pose = poses[0];
-      //   console.log(poses);
     });
 
     // Get the skeleton connection information
@@ -50,22 +45,6 @@ class State {
     scale(height / 2);
     orbitControl();
     background(10, 0, 20);
-    // scale(-1, 1);
-    // image(video, 0, 0);
-    // image(
-    //   this.video,
-    //   0,
-    //   0,
-    //   width,
-    //   height,
-    //   0,
-    //   0,
-    //   this.video.width,
-    //   this.video.height,
-    //   CONTAIN,
-    //   LEFT,
-    //   TOP
-    // );
 
     this.drawSkeleton();
 
@@ -73,17 +52,6 @@ class State {
 
     const dims = `video: ${this.video.width}x${this.video.height}\ncanvas: ${width}x${height}\nWindow: ${windowWidth}x${windowHeight}`;
     // this.infoElement.html(dims);
-  }
-
-  // TODO should implement CONTAIN functionality of image. its not a simple scaling.
-  transformX(x) {
-    return x;
-    return map(x, 0, this.video.width, 0, width);
-  }
-
-  transformY(y) {
-    return y;
-    return map(y, 0, this.video.height, 0, height);
   }
 
   drawSkeleton() {
