@@ -72,13 +72,13 @@ function draw() {
       let keypoint = pose.keypoints3D[i];
       stroke(255, 0, 255);
       strokeWeight(1);
-      fill(255, 150);
+      // fill(255, 150);
 
       if (keypoint.confidence > 0.1) {
         push();
         translate(keypoint.x, keypoint.y, keypoint.z);
         rotateZ(angle);
-        box(0.1);
+        box(0.06);
         pop();
       }
     }
