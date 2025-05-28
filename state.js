@@ -50,6 +50,15 @@ class State {
     this.connections = this.bodyPose.getSkeleton();
 
     this.CONFIDENCE_THRESHOLD = 0.1;
+
+    this.audio_context = new AudioContext();
+  }
+
+  create_oscillator() {
+    this.oscillator = this.audio_context.createOscillator();
+    this.oscillator.type = "sine";
+    this.oscillator.frequency.value = 1000;
+    this.oscillator.connect(this.audio_context.destination);
   }
 
   draw() {
@@ -242,6 +251,11 @@ class State {
     this.warningElement.html(warning);
   }
 
+  // TODO docs
+  // https://docs.ml5js.org/#/reference/facemesh
+  // https://github.com/tensorflow/tfjs-models/tree/master/face-landmarks-detection
+  // https://drive.google.com/file/d/1QvwWNfFoweGVjsXF3DXzcrCnz-mx-Lha/preview
+  // https://raw.githubusercontent.com/tensorflow/tfjs-models/master/face-landmarks-detection/mesh_map.jpg
   get_eye_vec(index) {
     return createVector(
       this.face.keypoints[index].x,
@@ -314,12 +328,35 @@ class State {
 
     const a = is_eye_closed(left_eye_pairs);
     const b = is_eye_closed(right_eye_pairs);
-    console.log(a.toFixed(4) * 1000, b.toFixed(4) * 1000);
+    // console.log(a.toFixed(4) * 1000, b.toFixed(4) * 1000);
     const EYE_THRESHOLD = 0.0026;
-    const both_closed =
-      a.toFixed(4) < EYE_THRESHOLD && b.toFixed(4) < EYE_THRESHOLD;
-    console.log(both_closed);
 
-    this.warningElement.html(both_closed ? "Eyes closed" : "Eyes open");
+    this.both_closed =
+      a.toFixed(4) < EYE_THRESHOLD && b.toFixed(4) < EYE_THRESHOLD;
+    // console.log(this.both_closed);
+
+    this.warningElement.html(this.both_closed ? "Eyes closed" : "Eyes open");
+
+    // TODO may come open in the middle, shd be more robust. maybe count ratio of open/closed
+    if (this.both_closed && !this.both_closed_prev) {
+      this.last_closed_time = Date.now();
+    }
+
+    if (
+      this.both_closed &&
+      this.last_closed_time &&
+      Date.now() - this.last_closed_time > 3000 &&
+      !this.oscillator
+    ) {
+      this.create_oscillator();
+      this.oscillator.start();
+    }
+
+    if (this.oscillator && !this.both_closed && this.both_closed_prev) {
+      this.oscillator.stop();
+      this.oscillator = null;
+    }
+
+    this.both_closed_prev = this.both_closed;
   }
 }
