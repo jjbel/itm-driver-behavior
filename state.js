@@ -10,6 +10,7 @@ class State {
     // createCanvas(windowWidth, windowHeight);
     const size = min(windowWidth, windowHeight);
     createCanvas(size, size, WEBGL);
+    angleMode(DEGREES);
 
     // using ideal: max is "not officially supported" according to ChatGPT, but it works in Chrome on Windows
     // In Firefox: DOMException: Failed to allocate videosource
@@ -46,9 +47,10 @@ class State {
     orbitControl();
     background(10, 0, 20);
 
+    this.head_detection();
+    // this.lean_detection();
     this.drawSkeleton();
 
-    this.detection();
 
     const dims = `video: ${this.video.width}x${this.video.height}\ncanvas: ${width}x${height}\nWindow: ${windowWidth}x${windowHeight}`;
     // this.infoElement.html(dims);
@@ -123,31 +125,13 @@ class State {
     return `(${vec.x.toFixed(2)}, ${vec.y.toFixed(2)}, ${vec.z.toFixed(2)})`;
   }
 
-  detection() {
-    const left_ear = this.keypointPos("left_eye");
-    const right_ear = this.keypointPos("right_eye");
+  head_detection() {
     const nose = this.keypointPos("nose");
 
-    const left_shoulder = this.keypointPos("left_shoulder");
-    const right_shoulder = this.keypointPos("right_shoulder");
-
-    if (!(left_ear && right_ear && nose && left_shoulder && right_shoulder)) {
+    if (!nose) {
       return;
     }
-
-    // const v = p5.Vector.normalize(
-    //   nose.sub(left_ear.add(right_ear).div(2)).mult([1, 1, 0])
-    // );
-    const v = p5.Vector.normalize(left_ear.sub(right_ear).mult([1, 1, 0]));
-
-    const u = p5.Vector.normalize(
-      left_shoulder.sub(right_shoulder).mult([1, 1, 0])
-    );
-
-    // console.log(this.vecToString(u), this.vecToString(v));
-    // angleMode(DEGREES);
-    // const heading = v.heading();
-    const heading = u.angleBetween(v);
+    const heading = nose.mult([1, 1, 0]).heading();
 
     if (!this.min_heading && !this.max_heading) {
       this.min_heading = heading;
@@ -155,19 +139,88 @@ class State {
     }
     this.min_heading = min(this.min_heading, heading);
     this.max_heading = max(this.max_heading, heading);
-    const x = map(heading, this.min_heading, this.max_heading, 0, 1);
+
+    const relative_turn = map(
+      heading,
+      this.min_heading,
+      this.max_heading,
+      0,
+      1
+    );
 
     let str = `Min: ${this.min_heading.toFixed(
       2
     )} | Max: ${this.max_heading.toFixed(2)} | Cur: ${heading.toFixed(
       2
-    )} ${x.toFixed(2)}`;
+    )} ${relative_turn.toFixed(2)}`;
     let warning = "";
 
     console.log(heading.toFixed(2));
 
-    if (x > 0.8 || x < 0.2) {
+    if (relative_turn > 0.8 || relative_turn < 0.2) {
       warning += "\nLook straight!";
+    } else {
+      warning += "";
+    }
+
+    this.infoElement.html(str);
+    this.warningElement.html(warning);
+  }
+
+  lean_detection() {
+    const left_shoulder = this.keypointPos("left_shoulder");
+    const right_shoulder = this.keypointPos("right_shoulder");
+    const left_hip = this.keypointPos("left_hip");
+    const right_hip = this.keypointPos("right_hip");
+
+    if (!(left_shoulder && right_shoulder && left_hip && right_hip)) {
+      return;
+    }
+
+    const X = p5.Vector.normalize(right_hip.sub(left_hip));
+    const Z = createVector(0, 0, 1);
+    const Y = p5.Vector.normalize(Z.cross(X));
+    // TODO plot X, Y, Z axes
+    // hip can rotate in XY plane, tho its midpoint is fixed
+    // but docs say z dirn is toward camera
+
+    const midpoint = p5.Vector.add(left_shoulder, right_shoulder).mult(0.5);
+    push();
+    translate(midpoint);
+    sphere(0.05);
+    pop();
+
+    const heading = midpoint.angleBetween(createVector(1, 0, 0));
+    // .mult([0, 1, 1])
+
+    console.log(midpoint.dot(Y));
+
+    if (!this.min_heading && !this.max_heading) {
+      this.min_heading = heading;
+      this.max_heading = heading;
+    }
+    this.min_heading = min(this.min_heading, heading);
+    this.max_heading = max(this.max_heading, heading);
+
+    const relative_turn = map(
+      heading,
+      this.min_heading,
+      this.max_heading,
+      0,
+      1
+    );
+
+    let str = `Min: ${this.min_heading.toFixed(
+      2
+    )} | Max: ${this.max_heading.toFixed(2)} | Cur: ${heading.toFixed(
+      2
+    )} ${relative_turn.toFixed(2)}`;
+    let warning = "";
+
+    // console.log(heading.toFixed(2));
+
+    if (relative_turn > 0.8 || relative_turn < 0.2) {
+      warning += "\Sit straight!";
     } else {
       warning += "";
     }
