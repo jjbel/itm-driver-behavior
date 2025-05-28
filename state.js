@@ -3,6 +3,11 @@ class State {
     // Load the bodyPose model
     console.log("Loading BodyPose model...");
     this.bodyPose = ml5.bodyPose("BlazePose");
+    this.faceMesh = ml5.faceMesh({
+      maxFaces: 1,
+      // refineLandmarks: false,
+      // flipHorizontal: false,
+    });
     console.log("done");
   }
 
@@ -26,7 +31,6 @@ class State {
       audio: false,
     };
     this.video = createCapture(constraints);
-
     this.infoElement = select("#info");
     this.warningElement = select("#warning");
 
@@ -34,6 +38,12 @@ class State {
     this.bodyPose.detectStart(this.video, (poses) => {
       //   TODO could choose pose with highest confidence
       this.pose = poses[0];
+    });
+
+    this.faceMesh.detectStart(this.video, (faces) => {
+      //   TODO could choose face with highest confidence
+      this.face = faces[0];
+      // console.log(this.face);
     });
 
     // Get the skeleton connection information
@@ -47,10 +57,10 @@ class State {
     orbitControl();
     background(10, 0, 20);
 
-    this.head_detection();
+    // this.head_detection();
     // this.lean_detection();
-    this.drawSkeleton();
-
+    this.eye_detection();
+    // this.drawSkeleton();
 
     const dims = `video: ${this.video.width}x${this.video.height}\ncanvas: ${width}x${height}\nWindow: ${windowWidth}x${windowHeight}`;
     // this.infoElement.html(dims);
@@ -99,9 +109,12 @@ class State {
     rectMode(CENTER);
     strokeWeight(1);
     fill(255, 100);
+    // TODO ground plane transform breaks on panning
+    // push();
     translate(0, 1);
     rotateX(PI / 2);
     square(0, 0, 2);
+    // pop();
   }
 
   keypointPos(name) {
@@ -155,7 +168,7 @@ class State {
     )} ${relative_turn.toFixed(2)}`;
     let warning = "";
 
-    console.log(heading.toFixed(2));
+    // console.log(heading.toFixed(2));
 
     if (relative_turn > 0.8 || relative_turn < 0.2) {
       warning += "\nLook straight!";
@@ -220,12 +233,93 @@ class State {
     // console.log(heading.toFixed(2));
 
     if (relative_turn > 0.8 || relative_turn < 0.2) {
-      warning += "\Sit straight!";
+      warning += "Sit straight!";
     } else {
       warning += "";
     }
 
     this.infoElement.html(str);
     this.warningElement.html(warning);
+  }
+
+  get_eye_vec(index) {
+    return createVector(
+      this.face.keypoints[index].x,
+      this.face.keypoints[index].y,
+      this.face.keypoints[index].z
+    );
+  }
+
+  eye_detection() {
+    if (!this.face) {
+      return;
+    }
+
+    const right_eye_pairs = [
+      [398, 382],
+      [384, 381],
+      [385, 380],
+      [386, 374],
+      [387, 373],
+      [388, 390],
+      [466, 249],
+    ];
+
+    const left_eye_pairs = [
+      [173, 155],
+      [157, 154],
+      [158, 153],
+      [159, 145],
+      [160, 144],
+      [161, 163],
+      [246, 7],
+    ];
+
+    // const THRESHOLD
+
+    const centre = this.get_eye_vec(6);
+
+    const eye_dist = p5.Vector.dist(this.get_eye_vec(6), this.get_eye_vec(463));
+
+    const is_eye_closed = (eye_pairs) => {
+      // TODO cud use dist sq, etc optimize
+      let dist = 0;
+      for (const [indexA, indexB] of eye_pairs) {
+        const pointA = this.get_eye_vec(indexA).sub(centre).div(400);
+        const pointB = this.get_eye_vec(indexB).sub(centre).div(400);
+        // TODO does it always predicts all points? confidence?
+        dist += p5.Vector.dist(pointA, pointB) / eye_dist;
+
+        stroke(0, 255, 255);
+        strokeWeight(4);
+        beginShape();
+        vertex(pointA);
+        vertex(pointB);
+        endShape();
+
+        push();
+        translate(pointA);
+        box(0.01);
+        pop();
+
+        push();
+        translate(pointB);
+        box(0.01);
+        pop();
+        // console.log(this.vecToString(pointA), this.vecToString(pointB));
+      }
+
+      return dist;
+    };
+
+    const a = is_eye_closed(left_eye_pairs);
+    const b = is_eye_closed(right_eye_pairs);
+    console.log(a.toFixed(4) * 1000, b.toFixed(4) * 1000);
+    const EYE_THRESHOLD = 0.0026;
+    const both_closed =
+      a.toFixed(4) < EYE_THRESHOLD && b.toFixed(4) < EYE_THRESHOLD;
+    console.log(both_closed);
+
+    this.warningElement.html(both_closed ? "Eyes closed" : "Eyes open");
   }
 }
