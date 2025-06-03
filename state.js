@@ -168,7 +168,7 @@ class State {
       headers: {
         "Content-Type": "text/plain",
       },
-      body: `${Date.now()},${heading}`,
+      body: `${Date.now()},${heading}\n`,
     });
 
     if (!this.min_heading && !this.max_heading) {
