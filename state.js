@@ -53,13 +53,6 @@ class State {
     this.CONFIDENCE_THRESHOLD = 0.1;
 
     this.audio_context = new AudioContext();
-
-    this.head_rotations = [];
-    this.saveElement.mousePressed(() => {
-      const data = this.head_rotations.join("\n");
-      this.download("head_rotations.csv", data);
-      console.log("Saved head rotations to head_rotations.csv");
-    });
   }
 
   create_oscillator() {
@@ -162,7 +155,6 @@ class State {
       return;
     }
     const heading = nose.mult([1, 1, 0]).heading();
-    this.head_rotations.push([Date.now(), heading]);
     fetch("/data", {
       method: "POST", // Set method here
       headers: {
@@ -374,23 +366,5 @@ class State {
     }
 
     this.both_closed_prev = this.both_closed;
-  }
-
-  // https://stackoverflow.com/a/18197511/17100530
-  download(filename, text) {
-    var pom = document.createElement("a");
-    pom.setAttribute(
-      "href",
-      "data:text/plain;charset=utf-8," + encodeURIComponent(text)
-    );
-    pom.setAttribute("download", filename);
-
-    if (document.createEvent) {
-      var event = document.createEvent("MouseEvents");
-      event.initEvent("click", true, true);
-      pom.dispatchEvent(event);
-    } else {
-      pom.click();
-    }
   }
 }
