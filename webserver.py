@@ -1,4 +1,4 @@
-from flask import Flask, redirect
+from flask import Flask, redirect, request
 
 # serve any file in current directory
 app = Flask(__name__, static_url_path="", static_folder="./")
@@ -8,6 +8,10 @@ app = Flask(__name__, static_url_path="", static_folder="./")
 def index():
     return redirect("/index.html")
 
+@app.post("/data")
+def saver_data():
+    print(request.get_data())
+    return "Data received", 200
 
 # make server publicly available
 # https://stackoverflow.com/a/7027113/17100530

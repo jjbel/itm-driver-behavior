@@ -163,6 +163,13 @@ class State {
     }
     const heading = nose.mult([1, 1, 0]).heading();
     this.head_rotations.push([Date.now(), heading]);
+    fetch("/data", {
+      method: "POST", // Set method here
+      headers: {
+        "Content-Type": "text/plain",
+      },
+      body: `${Date.now()},${heading}`,
+    });
 
     if (!this.min_heading && !this.max_heading) {
       this.min_heading = heading;
