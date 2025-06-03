@@ -2,6 +2,7 @@ from flask import Flask, redirect, request
 from pathlib import Path
 import socket
 
+# disable flask messages
 from logging import getLogger
 getLogger('werkzeug').disabled = True
 
@@ -14,9 +15,6 @@ send_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 # serve any file in current directory
 app = Flask(__name__, static_url_path="", static_folder="./")
 
-data = bytes()
-file = Path("data.csv")
-
 # send root to index.html
 @app.route("/")
 def index():
@@ -24,13 +22,9 @@ def index():
 
 @app.post("/data")
 def saver_data():
-    global data;
     received = request.get_data()
     print(received)
-    data += received
-    file.write_bytes(data)
-    send_socket.sendto(data, (target_ip, target_port))
-
+    send_socket.sendto(received, (target_ip, target_port))
 
     return "Data received", 200
 
@@ -44,6 +38,5 @@ def saver_data():
 # https://developer.mozilla.org/en-US/docs/Web/API/MediaDevices/getUserMedia
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000, ssl_context="adhoc")
-
 
 send_socket.close()
