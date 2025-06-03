@@ -1,22 +1,24 @@
-u = udpport("datagram", "LocalHost", "0.0.0.0", "LocalPort", 5014);
-disp("Polling for UDP data...");
+% for cleanup to work, apparently needs to be in function of the same name
+function plot
+    u = udpport("datagram", "LocalHost", "0.0.0.0", "LocalPort", 5014);
 
-cleanupObj = onCleanup(@cleanMeUp);
+    cleanup = onCleanup(@cleanupFn);
 
-while true
-    if u.NumDatagramsAvailable > 0
-        data = read(u, u.NumDatagramsAvailable, "uint8");
-        disp("Received:");
-        disp(char(data.Data));
+    while true
+
+        if u.NumDatagramsAvailable > 0
+            data = read(u, u.NumDatagramsAvailable, "uint8");
+            disp("Received:");
+            disp(char(data.Data));
+        end
+
+        pause(0.1); % avoid busy wait
     end
 
-    % pause(0.1); % avoid busy wait
 end
 
-function cleanMeUp()
+% if don't cleanup, matlab process keeps port open, can't reuse it
+function cleanupFn
     clear u
-    % saves data to file (or could save to workspace)
-    filename = [datestr(now, 'yyyy-mm-dd_HHMMSS') '.mat'];
-    disp(filename)
-    % save(filename, 'I', 'Z', 'U');
+    disp('closed socket.')
 end
