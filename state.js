@@ -15,7 +15,7 @@ class State {
     // createCanvas(windowWidth, windowHeight);
     const size = min(windowWidth, windowHeight);
     createCanvas(size, size, WEBGL);
-    angleMode(DEGREES);
+    // angleMode(DEGREES);
 
     // using ideal: max is "not officially supported" according to ChatGPT, but it works in Chrome on Windows
     // In Firefox: DOMException: Failed to allocate videosource
@@ -33,6 +33,7 @@ class State {
     this.video = createCapture(constraints);
     this.infoElement = select("#info");
     this.warningElement = select("#warning");
+    this.saveElement = select("#save");
 
     // Start detecting poses in the webcam video
     this.bodyPose.detectStart(this.video, (poses) => {
@@ -52,6 +53,13 @@ class State {
     this.CONFIDENCE_THRESHOLD = 0.1;
 
     this.audio_context = new AudioContext();
+
+    this.head_rotations = [];
+    this.saveElement.mousePressed(() => {
+      const data = this.head_rotations.join("\n");
+      this.download("head_rotations.csv", data);
+      console.log("Saved head rotations to head_rotations.csv");
+    });
   }
 
   create_oscillator() {
@@ -66,9 +74,9 @@ class State {
     orbitControl();
     background(10, 0, 20);
 
-    // this.head_detection();
+    this.head_detection();
     // this.lean_detection();
-    this.eye_detection();
+    // this.eye_detection();
     // this.drawSkeleton();
 
     const dims = `video: ${this.video.width}x${this.video.height}\ncanvas: ${width}x${height}\nWindow: ${windowWidth}x${windowHeight}`;
@@ -154,6 +162,7 @@ class State {
       return;
     }
     const heading = nose.mult([1, 1, 0]).heading();
+    this.head_rotations.push([Date.now(), heading]);
 
     if (!this.min_heading && !this.max_heading) {
       this.min_heading = heading;
@@ -358,5 +367,23 @@ class State {
     }
 
     this.both_closed_prev = this.both_closed;
+  }
+
+  // https://stackoverflow.com/a/18197511/17100530
+  download(filename, text) {
+    var pom = document.createElement("a");
+    pom.setAttribute(
+      "href",
+      "data:text/plain;charset=utf-8," + encodeURIComponent(text)
+    );
+    pom.setAttribute("download", filename);
+
+    if (document.createEvent) {
+      var event = document.createEvent("MouseEvents");
+      event.initEvent("click", true, true);
+      pom.dispatchEvent(event);
+    } else {
+      pom.click();
+    }
   }
 }
