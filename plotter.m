@@ -14,26 +14,59 @@ start_time_optitrack = datetime(startTimeStr, InputFormat = 'yyyy-MM-dd hh.mm.ss
 
 model_data(1, :) = model_data(1, :) / 1000 - posixtime(start_time_optitrack);
 model_data(2, :) = model_data(2, :) * 180/3.1415 + 90;
-model_data(2, :) = (model_data(2, :) - 8) * 5;
 
 % export settings:
 % Markers: Off
 % TODO
-
-hold on
 
 otimes = optitrack_data(:, 2);
 oX = optitrack_data(:, 3);
 oY = optitrack_data(:, 4);
 oZ = optitrack_data(:, 5);
 
+mtimes = model_data(1, :);
+mY = model_data(2, :);
+
+disp(length(mtimes));
+disp(length(mY));
+
+f = @(xq) interp1(otimes, oY, xq);
+
+function error = compute_objective(f, x, y, params)
+    a = params(3) * y + params(4);
+    b = f(params(1) * x + params(2));
+    b(isnan(b)) = 0;
+    error = mean((a -b) .^ 2);
+end
+
+objective = @(params)compute_objective(f, mtimes, mY, params);
+
+hold on
+
 % plot(otimes, oX, '-r');
-plot(otimes, oY, '-g');
+plot(otimes, oY, '-g', 'LineWidth', 2.2);
 % plot(otimes, oZ, '-b');
 
 % disp(model_data)
-plot(model_data(1, :), model_data(2, :), '-r');
+plot(mtimes, mY, '-b', 'LineWidth', 2.2);
 
-legend("optitrack", "model");
+mY = (mY - 8) * 5;
+plot(mtimes, mY, '-r', 'LineWidth', 2.2);
+
+fontsize(scale = 1.6)
+xlabel('Time (s)')
+ylabel('Head Angle (deg)')
+title('Head Tracking - Optitrack vs Model')
+
+legend("Optitrack", "Model", "Model Scaled");
+
+% f(mtimes(121)) is NaN. surrounding are zero
+
+% params = [1, 0, 1, 0];
+% plot(mtimes, (params(3) * mY + params(4) - f(params(1) * mtimes + params(2))) .^ 2, '-+y');
+% disp((params(3) * mY + params(4) - f(params(1) * mtimes + params(2))) .^ 2);
+disp(objective([1, 0, 1, 0]));
+disp(objective([1, 0, 5, -40]));
+disp(fminsearch(objective, [1, 0, 1, 0]));
 
 hold off
