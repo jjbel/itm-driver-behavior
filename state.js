@@ -70,7 +70,7 @@ class State {
     this.head_detection();
     // this.lean_detection();
     // this.eye_detection();
-    // this.drawSkeleton();
+    this.drawSkeleton();
 
     const dims = `video: ${this.video.width}x${this.video.height}\ncanvas: ${width}x${height}\nWindow: ${windowWidth}x${windowHeight}`;
     // this.infoElement.html(dims);
