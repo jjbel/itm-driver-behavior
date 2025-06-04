@@ -4,12 +4,22 @@ function plot
 
     cleanup = onCleanup(@cleanupFn);
 
+    data = [];
+
     while true
 
         if u.NumDatagramsAvailable > 0
-            data = read(u, u.NumDatagramsAvailable, "uint8");
+            datagrams = read(u, u.NumDatagramsAvailable, "uint8");
             disp("Received:");
-            disp(char(data.Data));
+
+            for i = 1:length(datagrams)
+                datagram = datagrams(i);
+                timestamp = typecast(uint8(datagram.Data(1:8)), 'double');
+                value = typecast(uint8(datagram.Data(9:16)), 'double');
+                disp(datetime(timestamp / 1000, 'ConvertFrom', 'posixtime', 'TimeZone', 'Europe/Berlin'));
+                disp(value);
+            end
+
         end
 
         pause(0.1); % avoid busy wait

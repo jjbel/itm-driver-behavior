@@ -148,6 +148,20 @@ class State {
     return `(${vec.x.toFixed(2)}, ${vec.y.toFixed(2)}, ${vec.z.toFixed(2)})`;
   }
 
+  floatToBytes(n) {
+    const array = new Float32Array([n]);
+    return new Blob([array.buffer], {
+      type: 'application/octet-stream'
+    });
+  }
+
+  longToBytes(n) {
+    const array = new BigUint64Array([n]);
+    return new Blob([array.buffer], {
+      type: 'application/octet-stream'
+    });
+  }
+
   head_detection() {
     const nose = this.keypointPos("nose");
 
@@ -155,12 +169,19 @@ class State {
       return;
     }
     const heading = nose.mult([1, 1, 0]).heading();
+
+    // message format: float64:timestamp float64:value
+
+    const message = new Blob([new Float64Array([Date.now()]), new Float64Array([heading])], {
+      type: 'application/octet-stream'
+    });
+
     fetch("/data", {
-      method: "POST", // Set method here
+      method: "POST",
       headers: {
-        "Content-Type": "text/plain",
+        "Content-Type": 'application/octet-stream',
       },
-      body: `${Date.now()},${heading}\n`,
+      body: message,
     });
 
     if (!this.min_heading && !this.max_heading) {
