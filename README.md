@@ -1,4 +1,26 @@
-A web app to detect the body pose of a human occupant of a vehicle, and warn for unsafe positions. The app runs on a phone mounted in the interior of the car.
+A web app to detect the body pose of a human occupant of a vehicle, and warn for unsafe positions in real-time. The app runs on a phone mounted in the interior of the car.
+
+Try it now!: https://jjbel.github.io/ml5-bodypose-example/
+
+## Motivation
+
+# Testing with OptiTrack
+
+![OptiTrack Motive UI](https://github.com/user-attachments/assets/129dbf7b-7484-4ef3-bdcc-9ddcfaf3b79d)
+
+We test the accuracy of head turn detection by comparing it with OptiTrack - a marker-based 3D tracking system.
+
+1. An occupant sits in the driving simulator. The iPhone is mounted on the dashboard with the occupant in view.
+2. The occupant turns their head through half a rotation from left to right, pausing at 30 and 60 degrees on each side.
+3. The app records the angle directly. OptiTrack uses markers mounted on a headband to track.
+
+The data is collected and analyzed in MATLAB:
+1. The model data is of much lower amplitude than the OptiTrack data. Scaling the model data by around 5 gives a better fit.
+
+2. The model has a delay in running, hence the model data is shifted behind the OptiTrack data.
+
+
+# Body Tracking
 
 The app uses the following javascript libraries:
 1. TensorFlow MoveNet (https://www.tensorflow.org/hub/tutorials/movenet): real-time pose detection
@@ -7,7 +29,6 @@ The app uses the following javascript libraries:
 
 The app is hosted on the [Github Pages](https://pages.github.com/) of this repo: https://jjbel.github.io/ml5-bodypose-example/
 
-## Motivation
 
 ## Keypoints
 
