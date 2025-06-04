@@ -1,10 +1,12 @@
 % for cleanup to work, apparently needs to be in function of the same name
-function plot
+function model_to_csv
     u = udpport("datagram", "LocalHost", "0.0.0.0", "LocalPort", 5014);
 
     % to be accessible in cleanupFn, needs to be passed by reference - use a handle
     model_data_var = SharedVar();
-    model_data_var.Value = [];
+    model_data_var.Value = []; % [1]; [1]
+    % plot(model_data_var.Value(1,:), model_data_var.Value(2,:))
+    % linkdata on
 
     cleanup = onCleanup(@() cleanupFn(model_data_var));
 
@@ -21,13 +23,15 @@ function plot
                 disp(datetime(timestamp / 1000, 'ConvertFrom', 'posixtime', 'TimeZone', 'Europe/Berlin'));
                 disp(value);
 
-                model_data_var.Value = [model_data_var.Value; [timestamp, value]];
+                % disp(model_data_var.Value(1, :));
+
+                model_data_var.Value = [model_data_var.Value [timestamp; value]];
             end
 
         end
 
         % TODO needed else CtrlC doesnt call cleanupFn
-        pause(0.01); % avoid busy wait
+        pause(0.0-1); % avoid busy wait
     end
 
 end
@@ -40,6 +44,6 @@ function cleanupFn(data)
     % this uses the same filename format as optirack, but appends " model" before .csv
     csv_file = "Take " + string(datetime('now', 'TimeZone', 'local', 'Format', 'yyyy-MM-dd hh.mm.ss a')) + " model.csv"
     disp(csv_file)
-    writematrix(data.Value, csv_file);
+    writematrix(data.Value', csv_file);
     disp('exported csv.');
 end
