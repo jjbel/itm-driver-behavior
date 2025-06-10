@@ -15,7 +15,7 @@ class State {
     // createCanvas(windowWidth, windowHeight);
     const size = min(windowWidth, windowHeight);
     createCanvas(size, size, WEBGL);
-    // angleMode(DEGREES);
+    angleMode(DEGREES);
 
     // using ideal: max is "not officially supported" according to ChatGPT, but it works in Chrome on Windows
     // In Firefox: DOMException: Failed to allocate videosource
@@ -67,9 +67,9 @@ class State {
     orbitControl();
     background(10, 0, 20);
 
-    this.head_detection();
+    // this.head_detection();
     // this.lean_detection();
-    // this.eye_detection();
+    this.eye_detection();
     this.drawSkeleton();
 
     const dims = `video: ${this.video.width}x${this.video.height}\ncanvas: ${width}x${height}\nWindow: ${windowWidth}x${windowHeight}`;
@@ -387,5 +387,12 @@ class State {
     }
 
     this.both_closed_prev = this.both_closed;
+
+    for (let j = 0; j < this.face.keypoints.length; j++) {
+      const keypoint = this.face.keypoints[j];
+      fill(0, 255, 0);
+      noStroke();
+      circle(keypoint.x, keypoint.y, 5);
+    }
   }
 }
