@@ -16,6 +16,7 @@ class State {
     const size = min(windowWidth, windowHeight);
     createCanvas(size, size, WEBGL);
     angleMode(DEGREES);
+    debugMode();
 
     // using ideal: max is "not officially supported" according to ChatGPT, but it works in Chrome on Windows
     // In Firefox: DOMException: Failed to allocate videosource
@@ -36,15 +37,38 @@ class State {
     this.saveElement = select("#save");
 
     // Start detecting poses in the webcam video
-    this.bodyPose.detectStart(this.video, (poses) => {
-      //   TODO could choose pose with highest confidence
+    this.bodyPose.detectStart(this.video, poses => {
+      // TODO could choose pose with highest confidence
       this.pose = poses[0];
     });
 
-    this.faceMesh.detectStart(this.video, (faces) => {
+    this.faceMesh.detectStart(this.video, faces => {
+      // faces can be empty if no face detected, even if the callback is called
+      if (faces.length === 0) {
+        return;
+      }
       //   TODO could choose face with highest confidence
       this.face = faces[0];
-      // console.log(this.face);
+
+      // order of operations seems to be face callback - draw() - screen_update
+      // so any drawing here in callback gets cleared by background() call in draw
+
+      this.face.keypoints = this.face.keypoints.map(point =>
+        createVector(point.x, point.y, point.z)
+      );
+
+      // have to create a copy:
+      // const face_centre = this.face.keypoints[6] is a reference, and changes after reassigning
+      // spread operator { ... this.face.keypoints[6] } doesn't copy the methods (like sub), so it's not a p5.Vector
+      const face_centre = createVector(
+        this.face.keypoints[6].x,
+        this.face.keypoints[6].y,
+        this.face.keypoints[6].z
+      );
+      const eye_dist = p5.Vector.dist(this.face.keypoints[362], this.face.keypoints[133]);
+      this.face.keypoints = this.face.keypoints.map(point => point.sub(face_centre).div(eye_dist));
+
+      this.eye_detection();
     });
 
     // Get the skeleton connection information
@@ -67,13 +91,45 @@ class State {
     orbitControl();
     background(10, 0, 20);
 
+    stroke(255, 0, 255);
+    strokeWeight(1);
+    push();
+    translate(createVector(0.1, 0.1, 0.1));
+    box(0.06);
+    pop();
+
     // this.head_detection();
     // this.lean_detection();
-    this.eye_detection();
-    this.drawSkeleton();
+    // this.eye_detection();
+    // this.drawSkeleton();
+    this.drawFace();
 
     const dims = `video: ${this.video.width}x${this.video.height}\ncanvas: ${width}x${height}\nWindow: ${windowWidth}x${windowHeight}`;
     // this.infoElement.html(dims);
+  }
+
+  drawFace() {
+    if (!this.face) {
+      return;
+    }
+    for (const point of this.face.keypoints) {
+      push();
+      translate(point.x, point.y, point.z);
+      box(0.035);
+      pop();
+    }
+
+    push();
+    fill(255, 0, 0);
+    translate(this.face.keypoints[1].x, this.face.keypoints[1].y, this.face.keypoints[1].z);
+    box(0.035);
+    pop();
+
+    push();
+    fill(255, 0, 0);
+    translate(this.face.keypoints[6].x, this.face.keypoints[6].y, this.face.keypoints[6].z);
+    box(0.05);
+    pop();
   }
 
   drawSkeleton() {
@@ -109,22 +165,22 @@ class State {
       if (keypoint.confidence > 0.1) {
         push();
         translate(keypoint.x, keypoint.y, keypoint.z);
-        box(0.06);
+        box(0.09);
         pop();
       }
     }
 
     // Draw a ground plane
+    push();
     stroke(255);
     rectMode(CENTER);
     strokeWeight(1);
     fill(255, 100);
     // TODO ground plane transform breaks on panning
-    // push();
     translate(0, 1);
-    rotateX(PI / 2);
-    square(0, 0, 2);
-    // pop();
+    rotateX(90);
+    // square(0, 0, 2);
+    pop();
   }
 
   keypointPos(name) {
@@ -137,28 +193,26 @@ class State {
       return;
     }
 
-    return createVector(
-      keypoint_.keypoint3D.x,
-      keypoint_.keypoint3D.y,
-      keypoint_.keypoint3D.z
-    );
+    return createVector(keypoint_.keypoint3D.x, keypoint_.keypoint3D.y, keypoint_.keypoint3D.z);
   }
 
-  vecToString(vec) {
-    return `(${vec.x.toFixed(2)}, ${vec.y.toFixed(2)}, ${vec.z.toFixed(2)})`;
+  vecToString(vec, precision = 2) {
+    return `(${vec.x.toFixed(precision)}, ${vec.y.toFixed(precision)}, ${vec.z.toFixed(
+      precision
+    )})`;
   }
 
   floatToBytes(n) {
     const array = new Float32Array([n]);
     return new Blob([array.buffer], {
-      type: 'application/octet-stream'
+      type: "application/octet-stream",
     });
   }
 
   longToBytes(n) {
     const array = new BigUint64Array([n]);
     return new Blob([array.buffer], {
-      type: 'application/octet-stream'
+      type: "application/octet-stream",
     });
   }
 
@@ -173,13 +227,13 @@ class State {
     // message format: float64:timestamp float64:value
 
     const message = new Blob([new Float64Array([Date.now()]), new Float64Array([heading])], {
-      type: 'application/octet-stream'
+      type: "application/octet-stream",
     });
 
     fetch("/data", {
       method: "POST",
       headers: {
-        "Content-Type": 'application/octet-stream',
+        "Content-Type": "application/octet-stream",
       },
       body: message,
     });
@@ -191,19 +245,11 @@ class State {
     this.min_heading = min(this.min_heading, heading);
     this.max_heading = max(this.max_heading, heading);
 
-    const relative_turn = map(
-      heading,
-      this.min_heading,
-      this.max_heading,
-      0,
-      1
-    );
+    const relative_turn = map(heading, this.min_heading, this.max_heading, 0, 1);
 
-    let str = `Min: ${this.min_heading.toFixed(
+    let str = `Min: ${this.min_heading.toFixed(2)} | Max: ${this.max_heading.toFixed(
       2
-    )} | Max: ${this.max_heading.toFixed(2)} | Cur: ${heading.toFixed(
-      2
-    )} ${relative_turn.toFixed(2)}`;
+    )} | Cur: ${heading.toFixed(2)} ${relative_turn.toFixed(2)}`;
     let warning = "";
 
     // console.log(heading.toFixed(2));
@@ -253,19 +299,11 @@ class State {
     this.min_heading = min(this.min_heading, heading);
     this.max_heading = max(this.max_heading, heading);
 
-    const relative_turn = map(
-      heading,
-      this.min_heading,
-      this.max_heading,
-      0,
-      1
-    );
+    const relative_turn = map(heading, this.min_heading, this.max_heading, 0, 1);
 
-    let str = `Min: ${this.min_heading.toFixed(
+    let str = `Min: ${this.min_heading.toFixed(2)} | Max: ${this.max_heading.toFixed(
       2
-    )} | Max: ${this.max_heading.toFixed(2)} | Cur: ${heading.toFixed(
-      2
-    )} ${relative_turn.toFixed(2)}`;
+    )} | Cur: ${heading.toFixed(2)} ${relative_turn.toFixed(2)}`;
     let warning = "";
 
     // console.log(heading.toFixed(2));
@@ -285,15 +323,8 @@ class State {
   // https://github.com/tensorflow/tfjs-models/tree/master/face-landmarks-detection
   // https://drive.google.com/file/d/1QvwWNfFoweGVjsXF3DXzcrCnz-mx-Lha/preview
   // https://raw.githubusercontent.com/tensorflow/tfjs-models/master/face-landmarks-detection/mesh_map.jpg
-  get_eye_vec(index) {
-    return createVector(
-      this.face.keypoints[index].x,
-      this.face.keypoints[index].y,
-      this.face.keypoints[index].z
-    );
-  }
-
   eye_detection() {
+    // this will be false for some time initially, as model takes time to start detecting
     if (!this.face) {
       return;
     }
@@ -318,51 +349,25 @@ class State {
       [246, 7],
     ];
 
-    // const THRESHOLD
-
-    const centre = this.get_eye_vec(6);
-
-    const eye_dist = p5.Vector.dist(this.get_eye_vec(6), this.get_eye_vec(463));
-
-    const is_eye_closed = (eye_pairs) => {
-      // TODO cud use dist sq, etc optimize
+    // TODO cud use dist sq, etc optimize
+    // TODO does it always predicts all points? confidence?
+    // console.log(indexA, indexB, pointA, pointB, this.face.keypoints);
+    const is_eye_closed = eye_pairs => {
       let dist = 0;
       for (const [indexA, indexB] of eye_pairs) {
-        const pointA = this.get_eye_vec(indexA).sub(centre).div(400);
-        const pointB = this.get_eye_vec(indexB).sub(centre).div(400);
-        // TODO does it always predicts all points? confidence?
-        dist += p5.Vector.dist(pointA, pointB) / eye_dist;
-
-        stroke(0, 255, 255);
-        strokeWeight(4);
-        beginShape();
-        vertex(pointA);
-        vertex(pointB);
-        endShape();
-
-        push();
-        translate(pointA);
-        box(0.01);
-        pop();
-
-        push();
-        translate(pointB);
-        box(0.01);
-        pop();
-        // console.log(this.vecToString(pointA), this.vecToString(pointB));
+        let pointA = this.face.keypoints[indexA];
+        let pointB = this.face.keypoints[indexB];
+        dist += pointA.dist(pointB);
       }
-
       return dist;
     };
 
     const a = is_eye_closed(left_eye_pairs);
     const b = is_eye_closed(right_eye_pairs);
-    // console.log(a.toFixed(4) * 1000, b.toFixed(4) * 1000);
-    const EYE_THRESHOLD = 0.0026;
+    // console.log(a.toFixed(4), b.toFixed(4));
+    const EYE_THRESHOLD = 0.65;
 
-    this.both_closed =
-      a.toFixed(4) < EYE_THRESHOLD && b.toFixed(4) < EYE_THRESHOLD;
-    // console.log(this.both_closed);
+    this.both_closed = a.toFixed(4) < EYE_THRESHOLD && b.toFixed(4) < EYE_THRESHOLD;
 
     this.warningElement.html(this.both_closed ? "Eyes closed" : "Eyes open");
 
@@ -387,12 +392,5 @@ class State {
     }
 
     this.both_closed_prev = this.both_closed;
-
-    for (let j = 0; j < this.face.keypoints.length; j++) {
-      const keypoint = this.face.keypoints[j];
-      fill(0, 255, 0);
-      noStroke();
-      circle(keypoint.x, keypoint.y, 5);
-    }
   }
 }
