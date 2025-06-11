@@ -223,20 +223,6 @@ class State {
     // const heading = nose.mult([1, 1, 0]).heading();
     const heading = this.heading;
 
-    // message format: float64:timestamp float64:value
-
-    const message = new Blob([new Float64Array([Date.now()]), new Float64Array([heading])], {
-      type: "application/octet-stream",
-    });
-
-    fetch("/data", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/octet-stream",
-      },
-      body: message,
-    });
-
     if (!this.min_heading && !this.max_heading) {
       this.min_heading = heading;
       this.max_heading = heading;
@@ -245,6 +231,22 @@ class State {
     this.max_heading = max(this.max_heading, heading);
 
     const relative_turn = map(heading, this.min_heading, this.max_heading, 0, 1);
+
+    // message format: float64:timestamp float64:value
+    const message = new Blob(
+      [new Float64Array([Date.now()]), new Float64Array([relative_turn * 90])],
+      {
+        type: "application/octet-stream",
+      }
+    );
+
+    fetch("/data", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/octet-stream",
+      },
+      body: message,
+    });
 
     let str = `Min: ${this.min_heading.toFixed(2)} | Max: ${this.max_heading.toFixed(
       2
