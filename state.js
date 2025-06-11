@@ -1,3 +1,7 @@
+function vec2str(vec, precision = 2) {
+  return `(${vec.x.toFixed(precision)}, ${vec.y.toFixed(precision)}, ${vec.z.toFixed(precision)})`;
+}
+
 class State {
   preload() {
     // Load the bodyPose model
@@ -98,7 +102,7 @@ class State {
     box(0.06);
     pop();
 
-    // this.head_detection();
+    this.head_detection();
     // this.lean_detection();
     // this.eye_detection();
     // this.drawSkeleton();
@@ -196,12 +200,6 @@ class State {
     return createVector(keypoint_.keypoint3D.x, keypoint_.keypoint3D.y, keypoint_.keypoint3D.z);
   }
 
-  vecToString(vec, precision = 2) {
-    return `(${vec.x.toFixed(precision)}, ${vec.y.toFixed(precision)}, ${vec.z.toFixed(
-      precision
-    )})`;
-  }
-
   floatToBytes(n) {
     const array = new Float32Array([n]);
     return new Blob([array.buffer], {
@@ -222,7 +220,8 @@ class State {
     if (!nose) {
       return;
     }
-    const heading = nose.mult([1, 1, 0]).heading();
+    // const heading = nose.mult([1, 1, 0]).heading();
+    const heading = this.heading;
 
     // message format: float64:timestamp float64:value
 
@@ -392,5 +391,11 @@ class State {
     }
 
     this.both_closed_prev = this.both_closed;
+
+    // TODO use p5.Vector.sub everywhere
+    const centre = this.face.keypoints[1];
+    const nose = this.face.keypoints[6];
+    const v1 = p5.Vector.sub(nose, centre);
+    this.heading = v1.heading() + 90;
   }
 }
