@@ -4,14 +4,14 @@ function natnet_callback(~, evnt)
 
     global optitrack_data
     global optitrack_start
+    global o_line
 
-    % Get the frame number
-    frame = double(evnt.data.fTimestamp);
+    timestamp = double(evnt.data.fTimestamp);
 
     if isempty(optitrack_start)
-        optitrack_start = frame;
+        optitrack_start = timestamp;
     else
-        frame = frame - optitrack_start;
+        timestamp = timestamp - optitrack_start;
     end
 
     % TODO printing in callback does nothing
@@ -28,6 +28,11 @@ function natnet_callback(~, evnt)
     eulery = a(2) * 180.0 / pi;
     % eulerz = a(3) * -180.0 / pi;
 
+    % just to match orientation of model
+    eulery = -eulery;
+
     % Fill the animated line's queue with the rb position
-    optitrack_data = [optitrack_data [frame; eulery]];
+    optitrack_data = [optitrack_data [timestamp; eulery]];
+
+    o_line.addpoints(timestamp, eulery);
 end
