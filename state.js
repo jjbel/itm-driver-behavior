@@ -81,6 +81,16 @@ class State {
     this.CONFIDENCE_THRESHOLD = 0.1;
 
     this.audio_context = new AudioContext();
+
+    let button1 = createButton("Set 0");
+    button1.mousePressed(() => {
+      this.min_heading = this.heading;
+    });
+
+    let button2 = createButton("Set 0");
+    button2.mousePressed(() => {
+      this.max_heading = this.heading;
+    });
   }
 
   create_oscillator() {
@@ -221,7 +231,7 @@ class State {
       return;
     }
     // const heading = nose.mult([1, 1, 0]).heading();
-    const heading = this.heading;
+    const heading = -this.heading;
 
     if (!this.min_heading && !this.max_heading) {
       this.min_heading = heading;
@@ -230,15 +240,15 @@ class State {
     this.min_heading = min(this.min_heading, heading);
     this.max_heading = max(this.max_heading, heading);
 
-    const relative_turn = map(heading, this.min_heading, this.max_heading, 0, 1);
+    // if (!this.min_heading && !this.max_heading) {
+    //   return;
+    // }
+    const relative_turn = map(heading, this.min_heading, this.max_heading, 90, 0);
 
     // message format: float64:timestamp float64:value
-    const message = new Blob(
-      [new Float64Array([Date.now()]), new Float64Array([relative_turn * 90])],
-      {
-        type: "application/octet-stream",
-      }
-    );
+    const message = new Blob([new Float64Array([Date.now()]), new Float64Array([relative_turn])], {
+      type: "application/octet-stream",
+    });
 
     fetch("/data", {
       method: "POST",
@@ -255,14 +265,14 @@ class State {
 
     // console.log(heading.toFixed(2));
 
-    if (relative_turn > 0.8 || relative_turn < 0.2) {
-      warning += "\nLook straight!";
-    } else {
-      warning += "";
-    }
+    // if (relative_turn > 0.8 || relative_turn < 0.2) {
+    //   warning += "\nLook straight!";
+    // } else {
+    //   warning += "";
+    // }
 
     this.infoElement.html(str);
-    this.warningElement.html(warning);
+    // this.warningElement.html(warning);
   }
 
   lean_detection() {

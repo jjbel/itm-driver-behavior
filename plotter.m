@@ -1,10 +1,10 @@
 clc
 
-model_file = "Take 2025-06-11 05.13.04 PM model.csv";
+model_file = "Take 2025-06-11 05.36.59 PM model.csv";
 model_data = readmatrix(model_file)';
 % start_time_model = datetime(B(1) / 1000, 'ConvertFrom', 'posixtime', 'TimeZone', 'Europe/Berlin');
 
-optitrack_file = "Take 2025-06-11 04.40.35 PM_003.csv";
+optitrack_file = "Take 2025-06-11 04.40.35 PM_004.csv";
 optitrack_data = readmatrix(optitrack_file, NumHeaderLines = 7);
 
 info = textscan(fopen(optitrack_file), ' %s', 24, Delimiter = ',');
@@ -21,8 +21,8 @@ mtimes = model_data(1, :);
 mY = model_data(2, :);
 mtimes = mtimes / 1000 - posixtime(start_time_optitrack);
 % mY = mY * 180/3.1415 + 90;
-mY = -mY - 22;
-mY = 2 * mY;
+% mY = mY + 22;
+mY = -1 * mY;
 
 % export settings:
 % Markers: Off
