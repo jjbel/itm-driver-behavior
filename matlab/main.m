@@ -1,8 +1,11 @@
 function main
+    % From: Optitrack Sample for Rigid Body Pose Data
     clc
-
+    % change this to your location of the Matlab plugin folder
     addpath('..\..\OptiTrack_MATLAB_Plugin_1.1.0', '..\..\OptiTrack_MATLAB_Plugin_1.1.0\Matlab');
+
     % to be accessible in cleanupFn, needs to be passed by reference - use a handle
+    % TODO or use global vars - but considered bad practice
     natnetclient = SharedVar();
     natnetclient.Value = natnet;
     connection = natnetclient.Value.ConnectToNatNet('127.0.0.1', '127.0.0.1', 'Multicast');
@@ -12,58 +15,83 @@ function main
         return
     end
 
+    % TODO or cud use polling directly
     natnetclient.Value.addlistener(1, 'natnet_callback');
     natnetclient.Value.enable(0);
 
-    global data
+    global optitrack_data
+    global model_data
 
+    % Initial starts of optitrack and model may not be synchronized. ie optitrack_start - model_start may not be zero
+
+    % calling clear/using persistent var doesn't clear optitrack_start between runs
+    global optitrack_start
+    optitrack_start = [];
+
+    model_start = -1;
+
+    % model data from UDP
     u = udpport("datagram", "LocalHost", "0.0.0.0", "LocalPort", 5014);
 
-    % to be accessible in cleanupFn, needs to be passed by reference - use a handle
-    model_data_var = SharedVar();
-    model_data_var.Value = [];
+    model_data = [];
 
-    cleanup = onCleanup(@() cleanupFn(model_data_var, natnetclient));
+    cleanup = onCleanup(@() cleanupFn(natnetclient));
 
-    disp("C5");
-
-    % Run and execute eventhandler queues until a key is pressed to exit pause.
-    % fprintf('(Enter any key to quit)\n\n')
-    % pause;
+    i = 1;
 
     while true
 
         if u.NumDatagramsAvailable > 0
             datagrams = read(u, u.NumDatagramsAvailable, "uint8");
-            % disp("Received:");
 
             for i = 1:length(datagrams)
                 datagram = datagrams(i);
-                timestamp = typecast(uint8(datagram.Data(1:8)), 'double');
+                timestamp = typecast(uint8(datagram.Data(1:8)), 'double') / 1000;
                 value = typecast(uint8(datagram.Data(9:16)), 'double');
-                % disp(datetime(timestamp / 1000, 'ConvertFrom', 'posixtime', 'TimeZone', 'Europe/Berlin'));
-                % disp(value);
-                fprintf('m: %f\n', value);
+                % time = datetime(timestamp / 1000, 'ConvertFrom', 'posixtime', 'TimeZone', 'Europe/Berlin');
 
-                model_data_var.Value = [model_data_var.Value [timestamp; value]];
+                % TODO move this out of the for loop
+                if model_start == -1
+                    model_start = timestamp;
+                else
+                    timestamp = timestamp - model_start;
+                end
+
+                % TODO can reserve memory?
+                model_data = [model_data [timestamp; value]];
+                % disp(model_data(:, end));
+
             end
 
         end
 
-        if ~isempty(data)
-            % disp(data(end));
-            fprintf('o: %f', data(end));
+        if ~isempty(optitrack_data)
+            optitrack_data(1, :) = optitrack_data(1, :) - optitrack_data(1, 1);
         end
 
-        fprintf('\n\n');
+        if ~isempty(model_data)
+            model_data(1, :) = model_data(1, :) - model_data(1, 1);
+        end
+
+        if ~isempty(optitrack_data)
+            fprintf('o: %f %f\n', optitrack_data(1, end), optitrack_data(2, end));
+        end
+
+        if ~isempty(model_data)
+            fprintf('m: %f %f\n', model_data(1, end), model_data(2, end));
+        end
 
         % TODO needed else CtrlC doesnt call cleanupFn
         pause(1/60); % avoid busy wait
+
+        i = i + 1;
     end
 
 end
 
-function cleanupFn(model_data_var, natnetclient)
+function cleanupFn(natnetclient)
+    global model_data
+    global optitrack_data
     % if don't cleanup, matlab process keeps port open, can't reuse it
     clear u
     disp('closed socket.');
@@ -74,6 +102,8 @@ function cleanupFn(model_data_var, natnetclient)
     % this uses the same filename format as optirack, but appends " model" before .csv
     csv_file = "Take " + string(datetime('now', 'TimeZone', 'local', 'Format', 'yyyy-MM-dd hh.mm.ss a')) + " model.csv"
     disp(csv_file)
-    % writematrix(model_data_var.Value', csv_file);
+    % writematrix(model_data.Value', csv_file);
     disp('exported csv.');
+
+    clear
 end
