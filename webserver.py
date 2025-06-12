@@ -13,7 +13,7 @@ target_port=5014
 send_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 
 # serve any file in current directory
-app = Flask(__name__, static_url_path="", static_folder="./")
+app = Flask(__name__, static_url_path="", static_folder="./app/")
 
 # send root to index.html
 @app.route("/")
