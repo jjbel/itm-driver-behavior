@@ -41,8 +41,8 @@ function main
 
     cleanup = onCleanup(@() cleanupFn(natnetclient));
 
-    plot_time_look_ahead = 1;
-    plot_time_look_back = 20;
+    plot_time_look_ahead = 0.5;
+    plot_time_look_back = 25;
     CreatePlots(plot_time_look_ahead + plot_time_look_back);
 
     i = 1;
@@ -133,17 +133,12 @@ function CreatePlots(total_time)
     % callback functions
     global o_line m_line
 
-    % create a figure which will contain two subplots
-    % hf1 = figure;
-    % hf1.WindowStyle = 'docked';
-
-    % plot and animated line for position
-    % a1 = subplot(1, 2, 1);
-    % plt = subplot();
-    title('Position');
-    xlabel('Frame')
-    ylabel('Position (m)')
-    % axis([-10, 10, -180, 180]);
+    title('Head Tracking - Optitrack vs Model');
+    xlabel('Time (s)')
+    ylabel('Head Angle (deg)')
+    xline(0);
+    yline(0);
+    grid on
 
     % optitrack camera frequency is 120Hz currently
     point_count = total_time * 120;
@@ -151,13 +146,18 @@ function CreatePlots(total_time)
     o_line = animatedline;
     o_line.MaximumNumPoints = point_count;
     o_line.Marker = '.';
-    % TODO linewidth not working
     o_line.LineWidth = 3;
     o_line.Color = [0 1 0];
+    % o_line.DisplayName = 'Optitrack';
 
     m_line = animatedline;
     m_line.MaximumNumPoints = point_count;
     m_line.Marker = '.';
     m_line.LineWidth = 3;
     m_line.Color = [1 0 0];
+    % m_line.DisplayName = 'Model';
+
+    fontsize(scale = 1.6)
+    % TODO legend not working
+    % legend();
 end
