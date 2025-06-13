@@ -15,31 +15,34 @@ function main
         return
     end
 
+    global optitrack_data
+    global model_data
+    model_data = [];
+
+    global m_line
+
+    model_start = -1;
+
+    % Initial starts of optitrack and model may not be synchronized. ie optitrack_start - model_start may not be zero
+    global optitrack_start
+    optitrack_start = [];
+
+    global stdout
+    stdout = "";
+
     % TODO or cud use polling directly
     natnetclient.Value.addlistener(1, 'natnet_callback');
     natnetclient.Value.enable(0);
 
-    global optitrack_data
-    global model_data
-    global m_line
-
-    % Initial starts of optitrack and model may not be synchronized. ie optitrack_start - model_start may not be zero
-
     % calling clear/using persistent var doesn't clear optitrack_start between runs
-    global optitrack_start
-    optitrack_start = [];
-
-    model_start = -1;
 
     % model data from UDP
     u = udpport("datagram", "LocalHost", "0.0.0.0", "LocalPort", 5014);
 
-    model_data = [];
-
     cleanup = onCleanup(@() cleanupFn(natnetclient));
 
     plot_time_look_ahead = 1;
-    plot_time_look_back = 10;
+    plot_time_look_back = 20;
     CreatePlots(plot_time_look_ahead + plot_time_look_back);
 
     i = 1;
@@ -49,53 +52,57 @@ function main
         if u.NumDatagramsAvailable > 0
             datagrams = read(u, u.NumDatagramsAvailable, "uint8");
 
-            for i = 1:length(datagrams)
-                datagram = datagrams(i);
+            for datagram = datagrams
+                % datagram = datagrams(i);
                 timestamp = typecast(uint8(datagram.Data(1:8)), 'double') / 1000;
                 value = typecast(uint8(datagram.Data(9:16)), 'double');
 
                 % TODO move this out of the for loop
                 if model_start == -1
                     model_start = timestamp;
-                else
-                    timestamp = timestamp - model_start;
+                    stdout = stdout + "mstart\n";
                 end
+
+                % this should always happen! timestamp=0 on first frame
+                timestamp = timestamp - model_start;
 
                 % TODO can reserve memory?
                 model_data = [model_data [timestamp; value]];
 
                 % TODO initial time for both still isnt subtracted
-                if i ~= 1
-                    m_line.addpoints(timestamp, value);
-                end
+                % TODO if statement makes the call happen less often. i is being modified elsewhere?
+                % if i ~= 1
+                m_line.addpoints(timestamp, value);
+                stdout = stdout + sprintf("m: %f, %f\n", timestamp, value);
+                % fprintf("added points\n");
+                % end
 
+                % fprintf('m: %f %f\n', model_data(1, end), model_data(2, end));
             end
 
         end
 
         if ~isempty(optitrack_data)
-            optitrack_data(1, :) = optitrack_data(1, :) - optitrack_data(1, 1);
+            % Dynamically move the axis of the graph
             axis([-plot_time_look_back + optitrack_data(1, end), plot_time_look_ahead + optitrack_data(1, end), -90, 90]);
         end
 
-        if ~isempty(model_data)
-            model_data(1, :) = model_data(1, :) - model_data(1, 1);
-        end
+        % if ~isempty(optitrack_data)
+        %     fprintf('o: %f %f\n', optitrack_data(1, end), optitrack_data(2, end));
+        % end
 
-        if ~isempty(optitrack_data)
-            fprintf('o: %f %f\n', optitrack_data(1, end), optitrack_data(2, end));
-        end
+        % if ~isempty(model_data)
+        %     fprintf('m: %f %f\n', model_data(1, end), model_data(2, end));
+        % end
 
-        if ~isempty(model_data)
-            fprintf('m: %f %f\n', model_data(1, end), model_data(2, end));
-        end
-
-        % Dynamically move the axis of the graph
         drawnow
 
         % TODO needed else CtrlC doesnt call cleanupFn
         pause(1/60); % avoid busy wait
 
+        disp(i);
+        fprintf(stdout);
+        stdout = "";
         i = i + 1;
 
     end
@@ -136,7 +143,7 @@ function CreatePlots(total_time)
     title('Position');
     xlabel('Frame')
     ylabel('Position (m)')
-    axis([-10, 10, -180, 180]);
+    % axis([-10, 10, -180, 180]);
 
     % optitrack camera frequency is 120Hz currently
     point_count = total_time * 120;
@@ -145,12 +152,12 @@ function CreatePlots(total_time)
     o_line.MaximumNumPoints = point_count;
     o_line.Marker = '.';
     % TODO linewidth not working
-    o_line.LineWidth = 1.9;
+    o_line.LineWidth = 3;
     o_line.Color = [0 1 0];
 
     m_line = animatedline;
     m_line.MaximumNumPoints = point_count;
     m_line.Marker = '.';
-    m_line.LineWidth = 1.9;
+    m_line.LineWidth = 3;
     m_line.Color = [1 0 0];
 end

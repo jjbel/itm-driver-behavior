@@ -5,14 +5,17 @@ function natnet_callback(~, evnt)
     global optitrack_data
     global optitrack_start
     global o_line
+    global stdout
 
     timestamp = double(evnt.data.fTimestamp);
 
     if isempty(optitrack_start)
         optitrack_start = timestamp;
-    else
-        timestamp = timestamp - optitrack_start;
+        stdout = stdout + "ostart\n";
     end
+
+    % this should always happen! timestamp=0 on first frame
+    timestamp = timestamp - optitrack_start;
 
     % TODO printing in callback does nothing
     % fprintf("hello");
@@ -35,4 +38,5 @@ function natnet_callback(~, evnt)
     optitrack_data = [optitrack_data [timestamp; eulery]];
 
     o_line.addpoints(timestamp, eulery);
+    stdout = stdout + sprintf("o: %f, %f\n", timestamp, eulery);
 end
