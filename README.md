@@ -1,12 +1,30 @@
+# 
+
 A web app to detect the body pose of a human occupant of a vehicle, and warn for unsafe positions in real-time. The app runs on a phone mounted in the interior of the car.
 
 Try it now!: https://jjbel.github.io/ml5-bodypose-example/
+
+- [](#)
+  - [Motivation](#motivation)
+- [Testing with OptiTrack](#testing-with-optitrack)
+- [Body Tracking](#body-tracking)
+  - [Keypoints](#keypoints)
+  - [Features wishlist](#features-wishlist)
+  - [Other Pose Detection Approaches Tried](#other-pose-detection-approaches-tried)
+    - [1. ARKit](#1-arkit)
+    - [2. OpenPose](#2-openpose)
+    - [3. ml5.js bodypose](#3-ml5js-bodypose)
+    - [Further Reading](#further-reading)
+      - [MoveNet:](#movenet)
+
 
 ## Motivation
 
 # Testing with OptiTrack
 
-![OptiTrack Motive UI](https://github.com/user-attachments/assets/129dbf7b-7484-4ef3-bdcc-9ddcfaf3b79d)
+|                                           App UI                                           |                                           OptiTrack Motive UI                                           |
+| :----------------------------------------------------------------------------------------: | :-----------------------------------------------------------------------------------------------------: |
+| ![App UI](https://github.com/user-attachments/assets/e1ba84b1-52d7-4066-968c-35eebb2f30a7) | ![OptiTrack Motive UI](https://github.com/user-attachments/assets/129dbf7b-7484-4ef3-bdcc-9ddcfaf3b79d) |
 
 We test the accuracy of head turn detection by comparing it with OptiTrack - a marker-based 3D tracking system.
 
@@ -15,27 +33,31 @@ We test the accuracy of head turn detection by comparing it with OptiTrack - a m
 3. The app records the angle directly. OptiTrack uses markers mounted on a headband to track.
 
 The data is collected and analyzed in MATLAB:
+
 1. The model data is of much lower amplitude than the OptiTrack data. Scaling the model data by around 5 gives a better fit.
 
 2. The model has a delay in running, hence the model data is shifted behind the OptiTrack data.
 
-
 # Body Tracking
 
 The app uses the following javascript libraries:
+
 1. TensorFlow MoveNet (https://www.tensorflow.org/hub/tutorials/movenet): real-time pose detection
 2. ml5.js bodypose (https://docs.ml5js.org/#/reference/bodypose) : which provides a simple API to actually use MoveNet in javascript
 3. p5.js (https://p5js.org/) for graphics functionality like video capture, canvas rendering
 
 The app is hosted on the [Github Pages](https://pages.github.com/) of this repo: https://jjbel.github.io/ml5-bodypose-example/
 
-
 ## Keypoints
 
-### BlazePose
+<details>
+
+<summary>
+BlazePose
+</summary>
+
 
 ```
-BlazePose:
 0 nose
 1 left_eye_inner
 2 left_eye
@@ -71,7 +93,13 @@ BlazePose:
 32 right_foot_index
 ```
 
-## Todo
+
+</details>
+
+
+
+
+## Features wishlist
 
 1. Integrate a biomechanical model
 2. Try to select a wide-angle lens of the phone
@@ -80,7 +108,7 @@ BlazePose:
 
 ---
 
-## Other Pose Detection Approaches tried
+## Other Pose Detection Approaches Tried
 
 ### 1. ARKit
 
@@ -92,7 +120,6 @@ The lack of visibility is a central issue. ARKit uses the default 24mm lens of t
 
 We tested ARFoundation by building the [arfoundation-samples](https://github.com/Unity-Technologies/arfoundation-samples) demo app for the iPhone.
 2d tracking on a dashboard-mounted iPhone seemed to detect better than 3d tracking, which just failed.
-
 
 ### 2. OpenPose
 
@@ -107,17 +134,20 @@ However OpenPose is unsuitable because it does not seem to be built for mobile.
 Although OpenPose claims realtime detection, testing it on both a laptop and powerful desktop failed to give realtime results.
 
 We tested 3 videos:
+
 1. `video.avi` which comes as a sample with OpenPose
 2. `driving-sim 480p`: a 30Hz 1920x1080 video of a person in the driving simulator, downscaled to 480p for better performance. The video was taken using the ultrawide 13mm lensof the iPhone 14 Pro.
 3. `driving-sim 240p`: the same video downscaled to 240p
 
 Testing was conducted on:
+
 1. **Laptop**: A Dell XPS Snapdragon X Elite (ARM) running open-pose cpu. This gave unusable framerates of **0.2Hz**, possible because openpose was running in emulation mode on ARM.
 2. **Lab PC**: with an Intel i9-14900KF CPU and NVIDIA RTX 4090 GPU. Even this powerful PC ran openpose-gpu at **17Hz** for a 30Hz video, i.e. half of realtime. The GPU utilisation was not high, but certain CPU cores were 100% utilized suggesting openpose-gpu is still CPU single-thread bound.
 
 ### 3. ml5.js bodypose
 
 ml5.js bodypose is attractive because:
+
 1. It provides javascript access to the Tensorflow MoveNet and BlazePose models, meaning it can run in a website on any device with a browser
 2. The models provide 3d pose detection without the need for a depth camera.
 3. The models run in realtime on modern phone hardware
@@ -128,9 +158,7 @@ ml5.js bodypose is attractive because:
 #### MoveNet:
 
 1. TensorFlow Blog Post:
-https://blog.tensorflow.org/2021/05/next-generation-pose-detection-with-movenet-and-tensorflowjs.html
+   https://blog.tensorflow.org/2021/05/next-generation-pose-detection-with-movenet-and-tensorflowjs.html
 
 2. Daniel Shiffman (ml5.js contributor): [DE
-Pose Estimation with ml5.js](https://youtu.be/T99fNXTUUaQ) , [3D Pose Estimation with ml5.js](https://youtu.be/IF414I26_K8)
-
-
+   Pose Estimation with ml5.js](https://youtu.be/T99fNXTUUaQ) , [3D Pose Estimation with ml5.js](https://youtu.be/IF414I26_K8)
