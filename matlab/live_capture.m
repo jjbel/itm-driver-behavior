@@ -1,4 +1,4 @@
-function main
+function live_capture
     % From: Optitrack Sample for Rigid Body Pose Data
     clc
     % change this to your location of the Matlab plugin folder
