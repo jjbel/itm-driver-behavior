@@ -87,14 +87,6 @@ function main
             axis([-plot_time_look_back + optitrack_data(1, end), plot_time_look_ahead + optitrack_data(1, end), -90, 90]);
         end
 
-        % if ~isempty(optitrack_data)
-        %     fprintf('o: %f %f\n', optitrack_data(1, end), optitrack_data(2, end));
-        % end
-
-        % if ~isempty(model_data)
-        %     fprintf('m: %f %f\n', model_data(1, end), model_data(2, end));
-        % end
-
         drawnow
 
         % TODO needed else CtrlC doesnt call cleanupFn
@@ -119,13 +111,12 @@ function cleanupFn(natnetclient)
     natnetclient.Value.disable(0);
     disp('disabled natnet callbacks.');
 
-    % this uses the same filename format as optirack, but appends " model" before .csv
-    csv_file = "Take " + string(datetime('now', 'TimeZone', 'local', 'Format', 'yyyy-MM-dd hh.mm.ss a')) + " model.csv"
-    disp(csv_file)
-    % writematrix(model_data.Value', csv_file);
-    disp('exported csv.');
+    % this uses the same filename format as optitrack, but appends " model" before .csv
+    csv_file = string(datetime('now', 'TimeZone', 'local', 'Format', 'yyyy-MM-dd HH.mm.ss')) + ".csv";
+    writematrix(model_data', "model " + csv_file);
+    writematrix(optitrack_data', "optitrack " + csv_file);
 
-    clear
+    disp('exported CSVs.');
 end
 
 function CreatePlots(total_time)
