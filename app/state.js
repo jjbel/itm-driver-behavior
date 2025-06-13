@@ -86,11 +86,15 @@ class State {
     button1.mousePressed(() => {
       this.min_heading = this.heading;
     });
+    button1.position(300, 300);
+    button1.style("font-size", "80px");
 
-    let button2 = createButton("Set 0");
+    let button2 = createButton("Set 90");
     button2.mousePressed(() => {
       this.max_heading = this.heading;
     });
+    button2.position(600, 300);
+    button2.style("font-size", "80px");
   }
 
   create_oscillator() {
@@ -128,7 +132,7 @@ class State {
     }
     for (const point of this.face.keypoints) {
       push();
-      translate(point.x, point.y, point.z);
+      translate(point.x / 3, point.y / 3, -point.z / 3);
       box(0.035);
       pop();
     }
@@ -231,19 +235,20 @@ class State {
       return;
     }
     // const heading = nose.mult([1, 1, 0]).heading();
-    const heading = -this.heading;
-
-    if (!this.min_heading && !this.max_heading) {
-      this.min_heading = heading;
-      this.max_heading = heading;
-    }
-    this.min_heading = min(this.min_heading, heading);
-    this.max_heading = max(this.max_heading, heading);
+    const heading = this.heading;
 
     // if (!this.min_heading && !this.max_heading) {
-    //   return;
+    //   this.min_heading = heading;
+    //   this.max_heading = heading;
     // }
-    const relative_turn = map(heading, this.min_heading, this.max_heading, 90, 0);
+    // this.min_heading = min(this.min_heading, heading);
+    // this.max_heading = max(this.max_heading, heading);
+
+    if (!this.min_heading || !this.max_heading) {
+      return;
+    }
+
+    const relative_turn = map(heading, this.min_heading, this.max_heading, 0, 90);
 
     // message format: float64:timestamp float64:value
     const message = new Blob([new Float64Array([Date.now()]), new Float64Array([relative_turn])], {
@@ -260,7 +265,7 @@ class State {
 
     let str = `Min: ${this.min_heading.toFixed(2)} | Max: ${this.max_heading.toFixed(
       2
-    )} | Cur: ${heading.toFixed(2)} ${relative_turn.toFixed(2)}`;
+    )} | Cur: ${heading.toFixed(2)} | Scaled: ${relative_turn.toFixed(2)}`;
     let warning = "";
 
     // console.log(heading.toFixed(2));
@@ -376,7 +381,7 @@ class State {
     const a = is_eye_closed(left_eye_pairs);
     const b = is_eye_closed(right_eye_pairs);
     // console.log(a.toFixed(4), b.toFixed(4));
-    const EYE_THRESHOLD = 0.65;
+    const EYE_THRESHOLD = 0.75;
 
     this.both_closed = a.toFixed(4) < EYE_THRESHOLD && b.toFixed(4) < EYE_THRESHOLD;
 

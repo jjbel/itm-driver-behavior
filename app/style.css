@@ -26,12 +26,13 @@ h1 {
   position: fixed;
   background-color: white;
   padding: 10px;
+  font-size: 40px;
 }
 
 #info {
-  top: 20px;
+  top: 100px;
 }
 
 #warning {
-  top: 160px;
+  top: 200px;
 }
