@@ -1,42 +1,43 @@
-# 
-
 A web app to detect the body pose of a human occupant of a vehicle, and warn for unsafe positions in real-time. The app runs on a phone mounted in the interior of the car.
 
 Try it now!: https://jjbel.github.io/ml5-bodypose-example/
 
-- [](#)
-  - [Motivation](#motivation)
 - [Testing with OptiTrack](#testing-with-optitrack)
 - [Body Tracking](#body-tracking)
   - [Keypoints](#keypoints)
-  - [Features wishlist](#features-wishlist)
-  - [Other Pose Detection Approaches Tried](#other-pose-detection-approaches-tried)
+    - [BlazePose](#blazepose)
+  - [Todo](#todo)
+  - [Other Pose Detection Approaches tried](#other-pose-detection-approaches-tried)
     - [1. ARKit](#1-arkit)
     - [2. OpenPose](#2-openpose)
     - [3. ml5.js bodypose](#3-ml5js-bodypose)
     - [Further Reading](#further-reading)
       - [MoveNet:](#movenet)
 
-
 ## Motivation
 
 # Testing with OptiTrack
 
-|                                           App UI                                           |                                           OptiTrack Motive UI                                           |
-| :----------------------------------------------------------------------------------------: | :-----------------------------------------------------------------------------------------------------: |
-| ![App UI](https://github.com/user-attachments/assets/e1ba84b1-52d7-4066-968c-35eebb2f30a7) | ![OptiTrack Motive UI](https://github.com/user-attachments/assets/129dbf7b-7484-4ef3-bdcc-9ddcfaf3b79d) |
+![OptiTrack Motive UI](https://github.com/user-attachments/assets/ed8eee6a-abea-4906-8596-1c47b003b4e1)
 
 We test the accuracy of head turn detection by comparing it with OptiTrack - a marker-based 3D tracking system.
 
 1. An occupant sits in the driving simulator. The iPhone is mounted on the dashboard with the occupant in view.
-2. The occupant turns their head through half a rotation from left to right, pausing at 30 and 60 degrees on each side.
+2. The occupant turns their head through half a rotation from left to right, pausing at 0, 30, 60, and 90 degrees on each side.
 3. The app records the angle directly. OptiTrack uses markers mounted on a headband to track.
 
 The data is collected and analyzed in MATLAB:
 
-1. The model data is of much lower amplitude than the OptiTrack data. Scaling the model data by around 5 gives a better fit.
+1. The model data is of much lower amplitude than the OptiTrack data. The UI has buttons to set 0 and 90 degrees, and the scaled output fits much better:
 
-2. The model has a delay in running, hence the model data is shifted behind the OptiTrack data.
+| Optitrack Angle | Model Angle |
+| --------------- | ----------- |
+| 0&deg;          | 5.955&deg;  |
+| 30&deg;         | 28.22&deg;  |
+| 60&deg;         | 61.80&deg;  |
+| 90&deg;         | 87.98&deg;  |
+
+2. The model has a delay in running, hence the model data is shifted behind the OptiTrack data by around 500ms.
 
 # Body Tracking
 
@@ -50,14 +51,10 @@ The app is hosted on the [Github Pages](https://pages.github.com/) of this repo:
 
 ## Keypoints
 
-<details>
-
-<summary>
-BlazePose
-</summary>
-
+### BlazePose
 
 ```
+BlazePose:
 0 nose
 1 left_eye_inner
 2 left_eye
@@ -93,13 +90,7 @@ BlazePose
 32 right_foot_index
 ```
 
-
-</details>
-
-
-
-
-## Features wishlist
+## Todo
 
 1. Integrate a biomechanical model
 2. Try to select a wide-angle lens of the phone
@@ -108,7 +99,7 @@ BlazePose
 
 ---
 
-## Other Pose Detection Approaches Tried
+## Other Pose Detection Approaches tried
 
 ### 1. ARKit
 
