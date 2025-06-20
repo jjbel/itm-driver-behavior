@@ -81,7 +81,7 @@ function live_capture
             axis([-plot_time_look_back + optitrack_data(1, end), plot_time_look_ahead + optitrack_data(1, end), -1, 1]);
         end
 
-        % drawnow
+        drawnow
 
         % TODO needed else CtrlC doesnt call cleanupFn
         pause(1/60); % avoid busy wait
@@ -116,7 +116,7 @@ end
 function CreatePlots(total_time)
     % making animated lines global so they can be accessed in the
     % callback functions
-    global o_line m_line
+    global o_line_y o_line_z m_line
 
     title('Head Tracking - Optitrack vs Model');
     xlabel('Time (s)')
@@ -128,12 +128,18 @@ function CreatePlots(total_time)
     % optitrack camera frequency is 120Hz currently
     point_count = total_time * 120;
 
-    o_line = animatedline;
-    o_line.MaximumNumPoints = point_count;
-    o_line.Marker = '.';
-    o_line.LineWidth = 3;
-    o_line.Color = [0 1 0];
+    o_line_y = animatedline;
+    o_line_y.MaximumNumPoints = point_count;
+    o_line_y.Marker = '.';
+    o_line_y.LineWidth = 3;
+    o_line_y.Color = [0 1 0];
     % o_line.DisplayName = 'Optitrack';
+
+    o_line_z = animatedline;
+    o_line_z.MaximumNumPoints = point_count;
+    o_line_z.Marker = '.';
+    o_line_z.LineWidth = 3;
+    o_line_z.Color = [0 0.6 0.4];
 
     m_line = animatedline;
     m_line.MaximumNumPoints = point_count;

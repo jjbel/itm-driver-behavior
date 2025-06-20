@@ -4,7 +4,7 @@ function natnet_callback(~, evnt)
 
     global optitrack_data
     global optitrack_start
-    global o_line
+    global o_line_y o_line_z
     global stdout
 
     timestamp = double(evnt.data.fTimestamp);
@@ -21,13 +21,13 @@ function natnet_callback(~, evnt)
     sim = transform(evnt.data.RigidBodies(1));
     head = transform(evnt.data.RigidBodies(2));
     pos = trvec(se3inv(sim) * head);
-    pos = [pos(2), pos(3)];
-    stdout = stdout + sprintf("tr: %.2f %.2f \n", pos');
+    stdout = stdout + sprintf("tr: %.2f %.2f \n", [pos(2) pos(3)]);
 
     % Fill the animated line's queue with the rb position
-    % optitrack_data = [optitrack_data [timestamp; z]];
+    optitrack_data = [optitrack_data [timestamp; pos(2); pos(3)]];
 
-    % o_line.addpoints(timestamp, z);
+    o_line_y.addpoints(timestamp, pos(2));
+    o_line_z.addpoints(timestamp, pos(3));
     % stdout = stdout + sprintf("o: %f, %f\n", timestamp, z);
 end
 
