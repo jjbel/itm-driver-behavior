@@ -21,7 +21,7 @@ function natnet_callback(~, evnt)
     sim = transform(evnt.data.RigidBodies(1));
     head = transform(evnt.data.RigidBodies(2));
     pos = trvec(se3inv(sim) * head);
-    stdout = stdout + sprintf("tr: %.2f %.2f \n", [pos(2) pos(3)]);
+    % stdout = stdout + sprintf("o: %f %.2f %.2f\n", [timestamp, pos(2) pos(3)]);
 
     % Fill the animated line's queue with the rb position
     optitrack_data = [optitrack_data [timestamp; pos(2); pos(3)]];

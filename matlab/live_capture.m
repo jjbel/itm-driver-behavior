@@ -19,7 +19,7 @@ function live_capture
     global model_data
     model_data = [];
 
-    global m_line
+    global m_line_y m_line_z
 
     model_start = -1;
     optitrack_data = []
@@ -56,7 +56,8 @@ function live_capture
             for datagram = datagrams
                 % datagram = datagrams(i);
                 timestamp = typecast(uint8(datagram.Data(1:8)), 'double') / 1000;
-                value = typecast(uint8(datagram.Data(9:16)), 'double');
+                m_y = typecast(uint8(datagram.Data(9:16)), 'double');
+                m_z = typecast(uint8(datagram.Data(17:24)), 'double');
 
                 % TODO move this out of the for loop
                 if model_start == -1
@@ -68,17 +69,29 @@ function live_capture
                 timestamp = timestamp - model_start;
 
                 % TODO can reserve memory?
-                model_data = [model_data [timestamp; value]];
+                model_data = [model_data [timestamp; m_y; m_z]];
 
-                m_line.addpoints(timestamp, value);
-                stdout = stdout + sprintf("m: %f, %f\n", timestamp, value);
+                % m_y = -m_y / 20;
+                % m_z = m_z / 2;
+
+                if size(model_data, 2) > 1
+                    m_y = m_y - model_data(2, 1);
+                    m_z = m_z - model_data(3, 1);
+
+                    m_y = m_y / 4;
+                    m_z = m_z / 4;
+                end
+
+                m_line_y.addpoints(timestamp, m_y);
+                m_line_z.addpoints(timestamp, m_z);
+                stdout = stdout + sprintf("m: %f %.2f %.2f\n", timestamp, m_y, m_z);
             end
 
         end
 
         if ~isempty(optitrack_data)
             % Dynamically move the axis of the graph
-            axis([-plot_time_look_back + optitrack_data(1, end), plot_time_look_ahead + optitrack_data(1, end), -1, 1]);
+            axis([-plot_time_look_back + optitrack_data(1, end), plot_time_look_ahead + optitrack_data(1, end), -0.6, 0.6]);
         end
 
         drawnow
@@ -116,7 +129,7 @@ end
 function CreatePlots(total_time)
     % making animated lines global so they can be accessed in the
     % callback functions
-    global o_line_y o_line_z m_line
+    global o_line_y o_line_z m_line_y m_line_z
 
     title('Head Tracking - Optitrack vs Model');
     xlabel('Time (s)')
@@ -139,14 +152,20 @@ function CreatePlots(total_time)
     o_line_z.MaximumNumPoints = point_count;
     o_line_z.Marker = '.';
     o_line_z.LineWidth = 3;
-    o_line_z.Color = [0 0.6 0.4];
+    o_line_z.Color = [0 0 1];
 
-    m_line = animatedline;
-    m_line.MaximumNumPoints = point_count;
-    m_line.Marker = '.';
-    m_line.LineWidth = 3;
-    m_line.Color = [1 0 0];
+    m_line_y = animatedline;
+    m_line_y.MaximumNumPoints = point_count;
+    m_line_y.Marker = '.';
+    m_line_y.LineWidth = 3;
+    m_line_y.Color = [1 0 0];
     % m_line.DisplayName = 'Model';
+
+    m_line_z = animatedline;
+    m_line_z.MaximumNumPoints = point_count;
+    m_line_z.Marker = '.';
+    m_line_z.LineWidth = 3;
+    m_line_z.Color = [1 0 1];
 
     fontsize(scale = 1.6)
     % TODO legend not working

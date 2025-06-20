@@ -61,6 +61,11 @@ class State {
         createVector(point.x, point.y, point.z)
       );
 
+      this.face.keypoints = this.face.keypoints.map(point => {
+        const v = p5.Vector.rotate(createVector(point.x, point.z), -45);
+        return createVector(v.x, point.y, v.y);
+      });
+
       // have to create a copy:
       // const face_centre = this.face.keypoints[6] is a reference, and changes after reassigning
       // spread operator { ... this.face.keypoints[6] } doesn't copy the methods (like sub), so it's not a p5.Vector
@@ -70,9 +75,9 @@ class State {
         this.face.keypoints[6].z
       );
       const eye_dist = p5.Vector.dist(this.face.keypoints[362], this.face.keypoints[133]);
-      this.face.keypoints = this.face.keypoints.map(point => point.sub(face_centre).div(eye_dist));
+      this.face.keypoints = this.face.keypoints.map(point => p5.Vector.div(point, eye_dist));
 
-      this.eye_detection();
+      // this.eye_detection();
     });
 
     // Get the skeleton connection information
@@ -82,19 +87,19 @@ class State {
 
     this.audio_context = new AudioContext();
 
-    let button1 = createButton("Set 0");
-    button1.mousePressed(() => {
-      this.min_heading = this.heading;
-    });
-    button1.position(300, 300);
-    button1.style("font-size", "80px");
+    // let button1 = createButton("Set 0");
+    // button1.mousePressed(() => {
+    // this.min_heading = this.heading;
+    // });
+    // button1.position(300, 300);
+    // button1.style("font-size", "80px");
 
-    let button2 = createButton("Set 90");
-    button2.mousePressed(() => {
-      this.max_heading = this.heading;
-    });
-    button2.position(600, 300);
-    button2.style("font-size", "80px");
+    // let button2 = createButton("Set 90");
+    // button2.mousePressed(() => {
+    // this.max_heading = this.heading;
+    // });
+    // button2.position(600, 300);
+    // button2.style("font-size", "80px");
   }
 
   create_oscillator() {
@@ -132,7 +137,7 @@ class State {
     }
     for (const point of this.face.keypoints) {
       push();
-      translate(point.x / 3, point.y / 3, -point.z / 3);
+      translate(point.x / 12, point.y / 12, -point.z / 12);
       box(0.035);
       pop();
     }
@@ -229,6 +234,42 @@ class State {
   }
 
   head_detection() {
+    if (!this.face) {
+      return;
+    }
+
+    const neck_centre = p5.Vector.div(
+      p5.Vector.add(this.face.keypoints[93], this.face.keypoints[393]),
+      2
+    );
+    this.infoElement.html(vec2str(neck_centre));
+
+    // message format: float64:timestamp float64:value
+    // const message = new Blob(new Float64Array([Date.now(), neck_centre.y, neck_centre.z]), {
+    //   type: "application/octet-stream",
+    // });
+
+    const message = new Blob(
+      [
+        new Float64Array([Date.now()]),
+        new Float64Array([neck_centre.y]),
+        new Float64Array([neck_centre.z]),
+      ],
+      {
+        type: "application/octet-stream",
+      }
+    );
+
+    fetch("/data", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/octet-stream",
+      },
+      body: message,
+    });
+  }
+
+  head_turn_detection() {
     const nose = this.keypointPos("nose");
 
     if (!nose) {
