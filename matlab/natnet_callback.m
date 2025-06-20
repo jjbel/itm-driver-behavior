@@ -17,26 +17,39 @@ function natnet_callback(~, evnt)
     % this should always happen! timestamp=0 on first frame
     timestamp = timestamp - optitrack_start;
 
-    % TODO printing in callback does nothing
-    % fprintf("hello");
-
     % Get the rb rotation
-    rbnum = 1;
-    rb = evnt.data.RigidBodies(rbnum);
-    q = quaternion(rb.qx, rb.qy, rb.qz, rb.qw);
-    qRot = quaternion(0, 0, 0, 1);
-    q = mtimes(q, qRot);
-    a = EulerAngles(q, 'zyx');
-    % eulerx = a(1) * -180.0 / pi;
-    eulery = a(2) * 180.0 / pi;
-    % eulerz = a(3) * -180.0 / pi;
-
-    % just to match orientation of model
-    eulery = -eulery;
+    sim = transform(evnt.data.RigidBodies(1));
+    head = transform(evnt.data.RigidBodies(2));
+    pos = trvec(se3inv(sim) * head);
+    pos = [pos(2), pos(3)];
+    stdout = stdout + sprintf("tr: %.2f %.2f \n", pos');
 
     % Fill the animated line's queue with the rb position
-    optitrack_data = [optitrack_data [timestamp; eulery]];
+    % optitrack_data = [optitrack_data [timestamp; z]];
 
-    o_line.addpoints(timestamp, eulery);
-    stdout = stdout + sprintf("o: %f, %f\n", timestamp, eulery);
+    % o_line.addpoints(timestamp, z);
+    % stdout = stdout + sprintf("o: %f, %f\n", timestamp, z);
+end
+
+function r = transform(rigidbody)
+    q = quaternion(rigidbody.qx, rigidbody.qy, rigidbody.qz, rigidbody.qw);
+    qRot = quaternion(0, 0, 0, 1);
+    q = mtimes(q, qRot); % TODO needed?
+
+    translation = [rigidbody.x rigidbody.y rigidbody.z];
+
+    r = se3(RotationMatrix(q), translation);
+end
+
+function T_inv = se3inv(T)
+    R = rotm(T);
+    t = trvec(T)';
+    T_inv = se3(R', (-R' * t)');
+end
+
+function s = m2str(M)
+    s = sprintf(['%.2f\t%.2f\t%.2f\t%.2f\n' ...
+                     '%.2f\t%.2f\t%.2f\t%.2f\n' ...
+                     '%.2f\t%.2f\t%.2f\t%.2f\n' ...
+                 '%.2f\t%.2f\t%.2f\t%.2f\n'], M);
 end

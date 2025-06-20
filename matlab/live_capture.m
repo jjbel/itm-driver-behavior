@@ -70,43 +70,23 @@ function live_capture
                 % TODO can reserve memory?
                 model_data = [model_data [timestamp; value]];
 
-                % TODO initial time for both still isnt subtracted
-                % TODO if statement makes the call happen less often. i is being modified elsewhere?
-                % if i ~= 1
                 m_line.addpoints(timestamp, value);
                 stdout = stdout + sprintf("m: %f, %f\n", timestamp, value);
-                % fprintf("added points\n");
-                % end
-
-                % fprintf('m: %f %f\n', model_data(1, end), model_data(2, end));
             end
 
         end
 
         if ~isempty(optitrack_data)
             % Dynamically move the axis of the graph
-            axis([-plot_time_look_back + optitrack_data(1, end), plot_time_look_ahead + optitrack_data(1, end), -90, 90]);
-
-            if abs(optitrack_data(end) - 0) < 1
-                set(gca, 'color', [0 1 1]);
-            elseif abs(optitrack_data(end) - 30) < 1
-                set(gca, 'color', [1 0 0]);
-            elseif abs(optitrack_data(end) - 60) < 1
-                set(gca, 'color', [0 1 0]);
-            elseif abs(optitrack_data(end) - 90) < 1
-                set(gca, 'color', [0 0 1]);
-            else
-                set(gca, 'color', [0 0 0]);
-            end
-
+            axis([-plot_time_look_back + optitrack_data(1, end), plot_time_look_ahead + optitrack_data(1, end), -1, 1]);
         end
 
-        drawnow
+        % drawnow
 
         % TODO needed else CtrlC doesnt call cleanupFn
         pause(1/60); % avoid busy wait
 
-        disp(i);
+        fprintf("\n\n%u\n", i);
         fprintf(stdout);
         stdout = "";
         i = i + 1;
