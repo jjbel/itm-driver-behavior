@@ -78,6 +78,7 @@ class State {
       this.face.keypoints = this.face.keypoints.map(point => p5.Vector.div(point, eye_dist));
 
       // this.eye_detection();
+      this.head_detection();
     });
 
     // Get the skeleton connection information
@@ -121,7 +122,7 @@ class State {
     box(0.06);
     pop();
 
-    this.head_detection();
+    // this.head_detection();
     // this.lean_detection();
     // this.eye_detection();
     // this.drawSkeleton();
