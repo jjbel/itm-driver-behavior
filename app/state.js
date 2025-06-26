@@ -5,14 +5,14 @@ function vec2str(vec, precision = 2) {
 class State {
   preload() {
     // Load the bodyPose model
-    console.log("Loading BodyPose model...");
-    this.bodyPose = ml5.bodyPose("BlazePose");
+    // console.log("Loading BodyPose model...");
+    // this.bodyPose = ml5.bodyPose("BlazePose");
     this.faceMesh = ml5.faceMesh({
       maxFaces: 1,
       // refineLandmarks: false,
       // flipHorizontal: false,
     });
-    console.log("done");
+    // console.log("done");
   }
 
   setup() {
@@ -41,10 +41,10 @@ class State {
     this.saveElement = select("#save");
 
     // Start detecting poses in the webcam video
-    this.bodyPose.detectStart(this.video, poses => {
-      // TODO could choose pose with highest confidence
-      this.pose = poses[0];
-    });
+    // this.bodyPose.detectStart(this.video, poses => {
+    //   // TODO could choose pose with highest confidence
+    //   this.pose = poses[0];
+    // });
 
     this.faceMesh.detectStart(this.video, faces => {
       // faces can be empty if no face detected, even if the callback is called
@@ -61,10 +61,10 @@ class State {
         createVector(point.x, point.y, point.z)
       );
 
-      this.face.keypoints = this.face.keypoints.map(point => {
-        const v = p5.Vector.rotate(createVector(point.x, point.z), -45);
-        return createVector(v.x, point.y, v.y);
-      });
+      // this.face.keypoints = this.face.keypoints.map(point => {
+      //   const v = p5.Vector.rotate(createVector(point.x, point.z), -45);
+      //   return createVector(v.x, point.y, v.y);
+      // });
 
       // have to create a copy:
       // const face_centre = this.face.keypoints[6] is a reference, and changes after reassigning
@@ -77,12 +77,19 @@ class State {
       const eye_dist = p5.Vector.dist(this.face.keypoints[362], this.face.keypoints[133]);
       this.face.keypoints = this.face.keypoints.map(point => p5.Vector.div(point, eye_dist));
 
+      if (this.initial_neck_centre_requested) {
+        this.initial_neck_centre = this.get_neck_centre();
+        this.initial_neck_centre_requested = false;
+        console.log(this.initial_neck_centre);
+      }
+
       // this.eye_detection();
       this.head_detection();
     });
 
     // Get the skeleton connection information
     this.connections = this.bodyPose.getSkeleton();
+    this.triangle_mesh = faceMesh.getTriangles();
 
     this.CONFIDENCE_THRESHOLD = 0.1;
 
@@ -101,6 +108,13 @@ class State {
     // });
     // button2.position(600, 300);
     // button2.style("font-size", "80px");
+
+    let button_centre = createButton("Centre Face");
+    button_centre.mousePressed(() => {
+      this.initial_neck_centre_requested = true;
+    });
+    button_centre.position(200, 200);
+    button_centre.style("font-size", "40px");
   }
 
   create_oscillator() {
@@ -122,14 +136,17 @@ class State {
     box(0.06);
     pop();
 
-    // this.head_detection();
-    // this.lean_detection();
-    // this.eye_detection();
-    // this.drawSkeleton();
     this.drawFace();
 
     const dims = `video: ${this.video.width}x${this.video.height}\ncanvas: ${width}x${height}\nWindow: ${windowWidth}x${windowHeight}`;
     // this.infoElement.html(dims);
+  }
+
+  draw_box(pos, size = 0.03) {
+    push();
+    translate(pos);
+    box(size);
+    pop();
   }
 
   drawFace() {
@@ -137,23 +154,8 @@ class State {
       return;
     }
     for (const point of this.face.keypoints) {
-      push();
-      translate(point.x / 12, point.y / 12, -point.z / 12);
-      box(0.035);
-      pop();
+      this.draw_box(p5.Vector.div(p5.Vector.sub(point, this.initial_neck_centre), 12), 0.035);
     }
-
-    push();
-    fill(255, 0, 0);
-    translate(this.face.keypoints[1].x, this.face.keypoints[1].y, this.face.keypoints[1].z);
-    box(0.035);
-    pop();
-
-    push();
-    fill(255, 0, 0);
-    translate(this.face.keypoints[6].x, this.face.keypoints[6].y, this.face.keypoints[6].z);
-    box(0.05);
-    pop();
   }
 
   drawSkeleton() {
@@ -234,15 +236,16 @@ class State {
     });
   }
 
+  get_neck_centre() {
+    return p5.Vector.div(p5.Vector.add(this.face.keypoints[93], this.face.keypoints[393]), 2);
+  }
+
   head_detection() {
     if (!this.face) {
       return;
     }
 
-    const neck_centre = p5.Vector.div(
-      p5.Vector.add(this.face.keypoints[93], this.face.keypoints[393]),
-      2
-    );
+    const neck_centre = this.get_neck_centre();
     this.infoElement.html(vec2str(neck_centre));
 
     // message format: float64:timestamp float64:value
