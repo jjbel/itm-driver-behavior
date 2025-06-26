@@ -2,21 +2,43 @@ function vec2str(vec, precision = 2) {
   return `(${vec.x.toFixed(precision)}, ${vec.y.toFixed(precision)}, ${vec.z.toFixed(precision)})`;
 }
 
+function floatToBytes(n) {
+  return new Float64Array([n]);
+}
+
+function floatsToBlob(...floats) {
+  // TODO why can't add many floats in one float array
+  // new Float64Array([Date.now(), neck_centre.y, neck_centre.z])
+  return new Blob(
+    floats.map(float => floatToBytes(float)),
+    {
+      type: "application/octet-stream",
+    }
+  );
+}
+
+function postMessage(message) {
+  fetch("/data", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/octet-stream",
+    },
+    body: message,
+  });
+}
+
 class State {
   preload() {
     // Load the bodyPose model
-    // console.log("Loading BodyPose model...");
-    // this.bodyPose = ml5.bodyPose("BlazePose");
+    this.bodyPose = ml5.bodyPose("BlazePose");
+
     this.faceMesh = ml5.faceMesh({
       maxFaces: 1,
       // refineLandmarks: false,
-      // flipHorizontal: false,
     });
-    // console.log("done");
   }
 
   setup() {
-    // createCanvas(windowWidth, windowHeight);
     const size = min(windowWidth, windowHeight);
     createCanvas(size, size, WEBGL);
     angleMode(DEGREES);
@@ -27,7 +49,6 @@ class State {
     // using 4096x2160 gives full HD resolution on laptop, but on Pixel it chooses the rear camera. Could further enforce using the front camera
 
     // by default, the resolution is 640x480, with cropped field of view
-
     const constraints = {
       video: {
         width: { ideal: 1920 },
@@ -41,10 +62,10 @@ class State {
     this.saveElement = select("#save");
 
     // Start detecting poses in the webcam video
-    // this.bodyPose.detectStart(this.video, poses => {
-    //   // TODO could choose pose with highest confidence
-    //   this.pose = poses[0];
-    // });
+    this.bodyPose.detectStart(this.video, poses => {
+      // TODO could choose pose with highest confidence
+      this.pose = poses[0];
+    });
 
     this.faceMesh.detectStart(this.video, faces => {
       // faces can be empty if no face detected, even if the callback is called
@@ -61,53 +82,22 @@ class State {
         createVector(point.x, point.y, point.z)
       );
 
-      // this.face.keypoints = this.face.keypoints.map(point => {
-      //   const v = p5.Vector.rotate(createVector(point.x, point.z), -45);
-      //   return createVector(v.x, point.y, v.y);
-      // });
-
-      // have to create a copy:
-      // const face_centre = this.face.keypoints[6] is a reference, and changes after reassigning
-      // spread operator { ... this.face.keypoints[6] } doesn't copy the methods (like sub), so it's not a p5.Vector
-      const face_centre = createVector(
-        this.face.keypoints[6].x,
-        this.face.keypoints[6].y,
-        this.face.keypoints[6].z
-      );
-      const eye_dist = p5.Vector.dist(this.face.keypoints[362], this.face.keypoints[133]);
-      this.face.keypoints = this.face.keypoints.map(point => p5.Vector.div(point, eye_dist));
+      // const eye_dist = p5.Vector.dist(this.face.keypoints[362], this.face.keypoints[133]);
+      // this.face.keypoints = this.face.keypoints.map(point => p5.Vector.div(point, eye_dist));
 
       if (this.initial_neck_centre_requested) {
         this.initial_neck_centre = this.get_neck_centre();
         this.initial_neck_centre_requested = false;
-        console.log(this.initial_neck_centre);
       }
 
-      // this.eye_detection();
       this.head_detection();
     });
 
     // Get the skeleton connection information
     this.connections = this.bodyPose.getSkeleton();
-    this.triangle_mesh = faceMesh.getTriangles();
+    this.triangle_mesh = this.faceMesh.getTriangles();
 
     this.CONFIDENCE_THRESHOLD = 0.1;
-
-    this.audio_context = new AudioContext();
-
-    // let button1 = createButton("Set 0");
-    // button1.mousePressed(() => {
-    // this.min_heading = this.heading;
-    // });
-    // button1.position(300, 300);
-    // button1.style("font-size", "80px");
-
-    // let button2 = createButton("Set 90");
-    // button2.mousePressed(() => {
-    // this.max_heading = this.heading;
-    // });
-    // button2.position(600, 300);
-    // button2.style("font-size", "80px");
 
     let button_centre = createButton("Centre Face");
     button_centre.mousePressed(() => {
@@ -117,28 +107,15 @@ class State {
     button_centre.style("font-size", "40px");
   }
 
-  create_oscillator() {
-    this.oscillator = this.audio_context.createOscillator();
-    this.oscillator.type = "sine";
-    this.oscillator.frequency.value = 1000;
-    this.oscillator.connect(this.audio_context.destination);
-  }
-
   draw() {
     scale(height / 2);
     orbitControl();
     background(10, 0, 20);
 
-    stroke(255, 0, 255);
-    strokeWeight(1);
-    push();
-    translate(createVector(0.1, 0.1, 0.1));
-    box(0.06);
-    pop();
-
     this.drawFace();
+    // this.drawSkeleton();
 
-    const dims = `video: ${this.video.width}x${this.video.height}\ncanvas: ${width}x${height}\nWindow: ${windowWidth}x${windowHeight}`;
+    // const dims = `video: ${this.video.width}x${this.video.height}\ncanvas: ${width}x${height}\nWindow: ${windowWidth}x${windowHeight}`;
     // this.infoElement.html(dims);
   }
 
@@ -153,9 +130,33 @@ class State {
     if (!this.face) {
       return;
     }
+
+    stroke(0, 255, 0);
+    strokeWeight(4);
+
+    const draw_scale = 4;
+
+    // TODO now boxes not being drawn
     for (const point of this.face.keypoints) {
-      this.draw_box(p5.Vector.div(p5.Vector.sub(point, this.initial_neck_centre), 12), 0.035);
+      this.draw_box(
+        p5.Vector.div(p5.Vector.sub(point, this.initial_neck_centre), draw_scale),
+        0.035
+      );
     }
+
+    for (const [idxA, idxB] of this.triangle_mesh) {
+      const a = p5.Vector.div(
+        p5.Vector.sub(this.face.keypoints[idxA], this.initial_neck_centre),
+        draw_scale
+      );
+      const b = p5.Vector.div(
+        p5.Vector.sub(this.face.keypoints[idxB], this.initial_neck_centre),
+        draw_scale
+      );
+      line(a.x, a.y, a.z, b.x, b.y, b.z);
+    }
+
+    stroke(255, 255, 255);
   }
 
   drawSkeleton() {
@@ -177,7 +178,6 @@ class State {
         vertex(pointA.x, pointA.y, pointA.z);
         vertex(pointB.x, pointB.y, pointB.z);
         endShape();
-        //   console.log(pointA.x, pointA.y, pointB.x, pointB.y);
       }
     }
 
@@ -213,27 +213,11 @@ class State {
     if (!this.pose) {
       return;
     }
-
     const keypoint_ = this.pose[name];
     if (!keypoint_) {
       return;
     }
-
     return createVector(keypoint_.keypoint3D.x, keypoint_.keypoint3D.y, keypoint_.keypoint3D.z);
-  }
-
-  floatToBytes(n) {
-    const array = new Float32Array([n]);
-    return new Blob([array.buffer], {
-      type: "application/octet-stream",
-    });
-  }
-
-  longToBytes(n) {
-    const array = new BigUint64Array([n]);
-    return new Blob([array.buffer], {
-      type: "application/octet-stream",
-    });
   }
 
   get_neck_centre() {
@@ -249,28 +233,7 @@ class State {
     this.infoElement.html(vec2str(neck_centre));
 
     // message format: float64:timestamp float64:value
-    // const message = new Blob(new Float64Array([Date.now(), neck_centre.y, neck_centre.z]), {
-    //   type: "application/octet-stream",
-    // });
-
-    const message = new Blob(
-      [
-        new Float64Array([Date.now()]),
-        new Float64Array([neck_centre.y]),
-        new Float64Array([neck_centre.z]),
-      ],
-      {
-        type: "application/octet-stream",
-      }
-    );
-
-    fetch("/data", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/octet-stream",
-      },
-      body: message,
-    });
+    postMessage(floatsToBlob(Date.now(), neck_centre.y, neck_centre.z));
   }
 
   head_turn_detection() {
@@ -279,15 +242,8 @@ class State {
     if (!nose) {
       return;
     }
-    // const heading = nose.mult([1, 1, 0]).heading();
-    const heading = this.heading;
 
-    // if (!this.min_heading && !this.max_heading) {
-    //   this.min_heading = heading;
-    //   this.max_heading = heading;
-    // }
-    // this.min_heading = min(this.min_heading, heading);
-    // this.max_heading = max(this.max_heading, heading);
+    const heading = this.heading;
 
     if (!this.min_heading || !this.max_heading) {
       return;
@@ -296,168 +252,13 @@ class State {
     const relative_turn = map(heading, this.min_heading, this.max_heading, 0, 90);
 
     // message format: float64:timestamp float64:value
-    const message = new Blob([new Float64Array([Date.now()]), new Float64Array([relative_turn])], {
-      type: "application/octet-stream",
-    });
-
-    fetch("/data", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/octet-stream",
-      },
-      body: message,
-    });
+    postMessage(floatsToBlob(Date.now(), relative_turn));
 
     let str = `Min: ${this.min_heading.toFixed(2)} | Max: ${this.max_heading.toFixed(
       2
     )} | Cur: ${heading.toFixed(2)} | Scaled: ${relative_turn.toFixed(2)}`;
     let warning = "";
 
-    // console.log(heading.toFixed(2));
-
-    // if (relative_turn > 0.8 || relative_turn < 0.2) {
-    //   warning += "\nLook straight!";
-    // } else {
-    //   warning += "";
-    // }
-
     this.infoElement.html(str);
-    // this.warningElement.html(warning);
-  }
-
-  lean_detection() {
-    const left_shoulder = this.keypointPos("left_shoulder");
-    const right_shoulder = this.keypointPos("right_shoulder");
-    const left_hip = this.keypointPos("left_hip");
-    const right_hip = this.keypointPos("right_hip");
-
-    if (!(left_shoulder && right_shoulder && left_hip && right_hip)) {
-      return;
-    }
-
-    const X = p5.Vector.normalize(right_hip.sub(left_hip));
-    const Z = createVector(0, 0, 1);
-    const Y = p5.Vector.normalize(Z.cross(X));
-    // TODO plot X, Y, Z axes
-    // hip can rotate in XY plane, tho its midpoint is fixed
-    // but docs say z dirn is toward camera
-
-    const midpoint = p5.Vector.add(left_shoulder, right_shoulder).mult(0.5);
-    push();
-    translate(midpoint);
-    sphere(0.05);
-    pop();
-
-    const heading = midpoint.angleBetween(createVector(1, 0, 0));
-    // .mult([0, 1, 1])
-
-    console.log(midpoint.dot(Y));
-
-    if (!this.min_heading && !this.max_heading) {
-      this.min_heading = heading;
-      this.max_heading = heading;
-    }
-    this.min_heading = min(this.min_heading, heading);
-    this.max_heading = max(this.max_heading, heading);
-
-    const relative_turn = map(heading, this.min_heading, this.max_heading, 0, 1);
-
-    let str = `Min: ${this.min_heading.toFixed(2)} | Max: ${this.max_heading.toFixed(
-      2
-    )} | Cur: ${heading.toFixed(2)} ${relative_turn.toFixed(2)}`;
-    let warning = "";
-
-    // console.log(heading.toFixed(2));
-
-    if (relative_turn > 0.8 || relative_turn < 0.2) {
-      warning += "Sit straight!";
-    } else {
-      warning += "";
-    }
-
-    this.infoElement.html(str);
-    this.warningElement.html(warning);
-  }
-
-  // TODO docs
-  // https://docs.ml5js.org/#/reference/facemesh
-  // https://github.com/tensorflow/tfjs-models/tree/master/face-landmarks-detection
-  // https://drive.google.com/file/d/1QvwWNfFoweGVjsXF3DXzcrCnz-mx-Lha/preview
-  // https://raw.githubusercontent.com/tensorflow/tfjs-models/master/face-landmarks-detection/mesh_map.jpg
-  eye_detection() {
-    // this will be false for some time initially, as model takes time to start detecting
-    if (!this.face) {
-      return;
-    }
-
-    const right_eye_pairs = [
-      [398, 382],
-      [384, 381],
-      [385, 380],
-      [386, 374],
-      [387, 373],
-      [388, 390],
-      [466, 249],
-    ];
-
-    const left_eye_pairs = [
-      [173, 155],
-      [157, 154],
-      [158, 153],
-      [159, 145],
-      [160, 144],
-      [161, 163],
-      [246, 7],
-    ];
-
-    // TODO cud use dist sq, etc optimize
-    // TODO does it always predicts all points? confidence?
-    // console.log(indexA, indexB, pointA, pointB, this.face.keypoints);
-    const is_eye_closed = eye_pairs => {
-      let dist = 0;
-      for (const [indexA, indexB] of eye_pairs) {
-        let pointA = this.face.keypoints[indexA];
-        let pointB = this.face.keypoints[indexB];
-        dist += pointA.dist(pointB);
-      }
-      return dist;
-    };
-
-    const a = is_eye_closed(left_eye_pairs);
-    const b = is_eye_closed(right_eye_pairs);
-    // console.log(a.toFixed(4), b.toFixed(4));
-    const EYE_THRESHOLD = 0.75;
-
-    this.both_closed = a.toFixed(4) < EYE_THRESHOLD && b.toFixed(4) < EYE_THRESHOLD;
-
-    this.warningElement.html(this.both_closed ? "Eyes closed" : "Eyes open");
-
-    // TODO may come open in the middle, shd be more robust. maybe count ratio of open/closed
-    if (this.both_closed && !this.both_closed_prev) {
-      this.last_closed_time = Date.now();
-    }
-
-    if (
-      this.both_closed &&
-      this.last_closed_time &&
-      Date.now() - this.last_closed_time > 3000 &&
-      !this.oscillator
-    ) {
-      this.create_oscillator();
-      this.oscillator.start();
-    }
-
-    if (this.oscillator && !this.both_closed && this.both_closed_prev) {
-      this.oscillator.stop();
-      this.oscillator = null;
-    }
-
-    this.both_closed_prev = this.both_closed;
-
-    // TODO use p5.Vector.sub everywhere
-    const centre = this.face.keypoints[1];
-    const nose = this.face.keypoints[6];
-    const v1 = p5.Vector.sub(nose, centre);
-    this.heading = v1.heading() + 90;
   }
 }
