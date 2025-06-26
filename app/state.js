@@ -82,8 +82,7 @@ class State {
         createVector(point.x, point.y, point.z)
       );
 
-      // const eye_dist = p5.Vector.dist(this.face.keypoints[362], this.face.keypoints[133]);
-      // this.face.keypoints = this.face.keypoints.map(point => p5.Vector.div(point, eye_dist));
+      // this.face.keypoints = this.face.keypoints.map(point => p5.Vector.div(point, this.get_eye_dist()));
 
       if (this.initial_neck_centre_requested) {
         this.initial_neck_centre = this.get_neck_centre();
@@ -134,7 +133,7 @@ class State {
     stroke(0, 255, 0);
     strokeWeight(4);
 
-    const draw_scale = 4;
+    const draw_scale = 300;
 
     // TODO now boxes not being drawn
     for (const point of this.face.keypoints) {
@@ -220,6 +219,10 @@ class State {
     return createVector(keypoint_.keypoint3D.x, keypoint_.keypoint3D.y, keypoint_.keypoint3D.z);
   }
 
+  get_eye_dist() {
+    return p5.Vector.dist(this.face.keypoints[362], this.face.keypoints[133]);
+  }
+
   get_neck_centre() {
     return p5.Vector.div(p5.Vector.add(this.face.keypoints[93], this.face.keypoints[393]), 2);
   }
@@ -229,11 +232,13 @@ class State {
       return;
     }
 
-    const neck_centre = this.get_neck_centre();
+    const neck_centre = p5.Vector.div(
+      p5.Vector.sub(this.get_neck_centre(), this.initial_neck_centre),
+      this.get_eye_dist()
+    );
     this.infoElement.html(vec2str(neck_centre));
-
     // message format: float64:timestamp float64:value
-    postMessage(floatsToBlob(Date.now(), neck_centre.y, neck_centre.z));
+    postMessage(floatsToBlob(Date.now(), neck_centre.x, neck_centre.z));
   }
 
   head_turn_detection() {
