@@ -139,7 +139,7 @@ class State {
     for (const point of this.face.keypoints) {
       this.draw_box(
         p5.Vector.div(p5.Vector.sub(point, this.initial_neck_centre), draw_scale),
-        0.035
+        0.02
       );
     }
 
@@ -154,6 +154,12 @@ class State {
       );
       line(a.x, a.y, a.z, b.x, b.y, b.z);
     }
+
+    stroke(255, 0, 0);
+    this.draw_box(
+      p5.Vector.div(p5.Vector.sub(this.get_neck_centre(), this.initial_neck_centre), draw_scale),
+      0.045
+    );
 
     stroke(255, 255, 255);
   }
@@ -224,7 +230,12 @@ class State {
   }
 
   get_neck_centre() {
-    return p5.Vector.div(p5.Vector.add(this.face.keypoints[93], this.face.keypoints[393]), 2);
+    // return p5.Vector.div(p5.Vector.add(this.face.keypoints[93], this.face.keypoints[393]), 2);
+    const sum = this.face.keypoints.reduce(
+      (accumulator, currentValue) => p5.Vector.add(accumulator, currentValue),
+      createVector(0, 0, 0)
+    );
+    return p5.Vector.div(sum, this.face.keypoints.length);
   }
 
   head_detection() {
@@ -238,7 +249,7 @@ class State {
     );
     this.infoElement.html(vec2str(neck_centre));
     // message format: float64:timestamp float64:value
-    postMessage(floatsToBlob(Date.now(), neck_centre.x, neck_centre.z));
+    postMessage(floatsToBlob(Date.now(), -neck_centre.y, neck_centre.x));
   }
 
   head_turn_detection() {
