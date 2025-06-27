@@ -4,8 +4,9 @@ function natnet_callback(~, evnt)
 
     global optitrack_data
     global optitrack_start
-    global o_line_y o_line_z
+    global o_line_y o_line_z subplot_oy subplot_oz plot_time_look_ahead plot_time_look_back
     global stdout
+    global axis_setting
 
     timestamp = double(evnt.data.fTimestamp);
 
@@ -29,6 +30,17 @@ function natnet_callback(~, evnt)
     o_line_y.addpoints(timestamp, pos(2));
     o_line_z.addpoints(timestamp, pos(3));
     % stdout = stdout + sprintf("o: %f, %f\n", timestamp, z);
+
+    %  Dynamically move the axis of the graph
+    axis_setting = [-plot_time_look_back + optitrack_data(1, end), plot_time_look_ahead + optitrack_data(1, end), -0.6, 0.6];
+
+    set(gcf, 'CurrentAxes', subplot_oy)
+    axis(axis_setting);
+    drawnow
+
+    set(gcf, 'CurrentAxes', subplot_oz)
+    axis(axis_setting);
+    drawnow
 end
 
 function r = transform(rigidbody)

@@ -19,7 +19,7 @@ function live_capture
     global model_data
     model_data = [];
 
-    global m_line_y m_line_z
+    global m_line_y m_line_z subplot_my subplot_mz plot_time_look_ahead plot_time_look_back
 
     model_start = -1;
     optitrack_data = []
@@ -30,6 +30,8 @@ function live_capture
 
     global stdout
     stdout = "";
+
+    global axis_setting
 
     % TODO or cud use polling directly
     natnetclient.Value.addlistener(1, 'natnet_callback');
@@ -48,7 +50,10 @@ function live_capture
 
     i = 1;
 
+    fprintf("hello");
+
     while true
+        fprintf("bee");
 
         if u.NumDatagramsAvailable > 0
             datagrams = read(u, u.NumDatagramsAvailable, "uint8");
@@ -90,10 +95,14 @@ function live_capture
         end
 
         if ~isempty(optitrack_data)
-            % Dynamically move the axis of the graph
-            axis([-plot_time_look_back + optitrack_data(1, end), plot_time_look_ahead + optitrack_data(1, end), -0.6, 0.6]);
+
         end
 
+        set(gcf, 'CurrentAxes', subplot_my)
+        axis(axis_setting);
+        drawnow
+        set(gcf, 'CurrentAxes', subplot_mz)
+        axis(axis_setting);
         drawnow
 
         % TODO needed else CtrlC doesnt call cleanupFn
@@ -131,15 +140,26 @@ function CreatePlots(total_time)
     % callback functions
     global o_line_y o_line_z m_line_y m_line_z
 
-    title('Head Tracking - Optitrack vs Model');
-    xlabel('Time (s)')
-    ylabel('Head Angle (deg)')
-    xline(0);
-    yline(0);
-    grid on
+    global fig subplot_oy subplot_oz subplot_my subplot_mz
+
+    % create a figure which will contain two subplots
+    fig = figure;
+    fig.WindowStyle = 'docked';
+
+    % title('Head Tracking - Optitrack vs Model');
+    % xlabel('Time (s)')
+    % ylabel('Head Angle (deg)')
+    % xline(0);
+    % yline(0);
+    % grid on
 
     % optitrack camera frequency is 120Hz currently
     point_count = total_time * 120;
+
+    subplot_oy = subplot(2, 2, 1);
+    title('Optitrack Y')
+    xlabel('Time (s)');
+    ylabel('Head Displacement (m)');
 
     o_line_y = animatedline;
     o_line_y.MaximumNumPoints = point_count;
@@ -148,11 +168,21 @@ function CreatePlots(total_time)
     o_line_y.Color = [0 1 0];
     % o_line.DisplayName = 'Optitrack';
 
+    subplot_oz = subplot(2, 2, 2);
+    title('Optitrack Z')
+    xlabel('Time (s)');
+    ylabel('Head Displacement (m)');
+
     o_line_z = animatedline;
     o_line_z.MaximumNumPoints = point_count;
     o_line_z.Marker = '.';
     o_line_z.LineWidth = 3;
     o_line_z.Color = [0 0 1];
+
+    subplot_my = subplot(2, 2, 3);
+    title('Model Y')
+    xlabel('Time (s)');
+    ylabel('Head Displacement (scaled units)');
 
     m_line_y = animatedline;
     m_line_y.MaximumNumPoints = point_count;
@@ -160,6 +190,11 @@ function CreatePlots(total_time)
     m_line_y.LineWidth = 3;
     m_line_y.Color = [1 0 0];
     % m_line.DisplayName = 'Model';
+
+    subplot_mz = subplot(2, 2, 4);
+    title('Model Z')
+    xlabel('Time (s)');
+    ylabel('Head Displacement (scaled units)');
 
     m_line_z = animatedline;
     m_line_z.MaximumNumPoints = point_count;
