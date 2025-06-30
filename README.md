@@ -6,18 +6,22 @@ https://github.com/user-attachments/assets/cef779b1-1e01-4884-8254-29dcbf54424f
 
 https://github.com/user-attachments/assets/e1dcc616-9ed5-46cd-b503-68abe0f11b84
 
-
-- [Testing with OptiTrack](#testing-with-optitrack)
-- [Body Tracking](#body-tracking)
-  - [Keypoints](#keypoints)
-    - [BlazePose](#blazepose)
-  - [Todo](#todo)
-  - [Other Pose Detection Approaches tried](#other-pose-detection-approaches-tried)
-    - [1. ARKit](#1-arkit)
-    - [2. OpenPose](#2-openpose)
-    - [3. ml5.js bodypose](#3-ml5js-bodypose)
-    - [Further Reading](#further-reading)
-      - [MoveNet:](#movenet)
+- [Motivation](#motivation)
+- [Our App](#our-app)
+  - [Existing studies focussed on mobile driver safety:](#existing-studies-focussed-on-mobile-driver-safety)
+- [App Architecture](#app-architecture)
+- [Benchmarking with OptiTrack](#benchmarking-with-optitrack)
+- [MATLAB Setup](#matlab-setup)
+- [Keypoints and Coordinate Systems](#keypoints-and-coordinate-systems)
+  - [BlazePose](#blazepose)
+  - [facemesh](#facemesh)
+- [Todo](#todo)
+- [Other Pose Detection Approaches tried](#other-pose-detection-approaches-tried)
+  - [1. ARKit](#1-arkit)
+  - [2. OpenPose](#2-openpose)
+  - [3. ml5.js bodypose](#3-ml5js-bodypose)
+  - [Further Reading](#further-reading)
+    - [MoveNet:](#movenet)
 
 ## Motivation
 
@@ -26,24 +30,24 @@ inadequate surveillance. 7% of driver errors were non-performance errors, for ex
 
 The EU has [mandated](https://single-market-economy.ec.europa.eu/news/mandatory-drivers-assistance-systems-expected-help-save-over-25000-lives-2038-2024-07-05_en) driver assistance systems, including drowsiness detection, for all new vehicles from 2024.
 However this does not cover motorcycles, which are 25 times more deadly per kilometer traveled than passenger cars. Modern motorcycles have a lack of Advanced driver-assistance system (ADAS).
-ADAS systems are also not present in the majority of older vehicles. 
+ADAS systems are also not present in the majority of older vehicles.
 
-An [IEEE report] (https://spectrum.ieee.org/partial-vehicle-autonomy-risk) discusses the risk of partial vehicle autonomy: occupants of cars with ADAS assume mistakenly believe that hands-free driving features can take full responsibility for driving, and take their hands off the wheel. 
+An [IEEE report] (https://spectrum.ieee.org/partial-vehicle-autonomy-risk) discusses the risk of partial vehicle autonomy: occupants of cars with ADAS assume mistakenly believe that hands-free driving features can take full responsibility for driving, and take their hands off the wheel.
 
-
-In India, there are 700,000 to 1 million food delivery workers on platforms like Zomato and Swiggy (according to [moneycontrol](https://www.moneycontrol.com/news/trends/more-than-a-third-of-food-delivery-workers-in-india-are-graduates-finds-survey-11278821.html )). These delivery workers ride 2-wheeler scooters, with an a phone mounted on the dashboard for navigation and tracking orders. They operate under [high-stress conditions](https://www.fortuneindia.com/business-news/racing-against-time-quick-commerce-is-pushing-delivery-riders-to-the-edge-claims-study/121714) (to cater to 15-minute delivery requirements) often throughout the night.
+In India, there are 700,000 to 1 million food delivery workers on platforms like Zomato and Swiggy (according to [moneycontrol](https://www.moneycontrol.com/news/trends/more-than-a-third-of-food-delivery-workers-in-india-are-graduates-finds-survey-11278821.html)). These delivery workers ride 2-wheeler scooters, with an a phone mounted on the dashboard for navigation and tracking orders. They operate under [high-stress conditions](https://www.fortuneindia.com/business-news/racing-against-time-quick-commerce-is-pushing-delivery-riders-to-the-edge-claims-study/121714) (to cater to 15-minute delivery requirements) often throughout the night.
 
 Most vehicle occupants possess a smartphone with a web browser. This presents an opportunity to make driver-assistance systems accessible to a large population. Smartphones from the last decade are equipped with a high-resolution video camera, a Graphics Processing Unit (GPU) for video processing and Machine Learning inference, and a web browser for running cross-platform apps.
 
 ## Our App
 
 We present a javascript web app, which can run offline on any device with a web browser. It runs a body pose estimation in realtime to detect and warn for dangerous seating positions such as:
+
 1. falling asleep (eyes closed)
 2. face too close to windshield
 3. not looking straight ahead
 4. knees on dashboard
 
-The is more intended be used as a general-purpose realtime markerless body-pose estimator, and can be mounted within a vehicle cabin or on a motorcycle. This replaces previous marker-based body tracking solutions such as OptiTrack  (which also require a multi-camera system which is difficult to mount within a vehicle) at the cost of slightly reduced tracking accuracy and latency (see benchmarks [below](#testing-with-optitrack))
+The app is also intended be used as a general-purpose realtime markerless body-pose estimator. It can run on a phone mounted within a vehicle cabin or on a motorcycle. This replaces previous marker-based body tracking solutions such as OptiTrack (which also require a multi-camera system which is difficult to mount within a vehicle) at the cost of slightly reduced tracking accuracy and latency (see benchmarks [below](#benchmarking-with-optitrack))
 
 ### Existing studies focussed on mobile driver safety:
 
@@ -61,12 +65,12 @@ It utilises the [BlazePose](https://blog.tensorflow.org/2021/05/high-fidelity-po
 
 The app can run on any device with a browser which has modern javascript support. This includes Android and iOS mobile phones, as well as windows and linux devices like Raspberry Pi's. Once downloaded, the app runs model inference locally, and hence offline.
 
-The app runs at 10Hz on an Apple iPhone 14 Pro (2022).
+The app runs at 10Hz on an Apple iPhone 14 Pro (2022). We are looking to increase performance to the >30fps possible with Tensorflow.
 
+## Benchmarking with OptiTrack
 
-# Testing with OptiTrack
-
-![OptiTrack Motive UI](https://github.com/user-attachments/assets/ed8eee6a-abea-4906-8596-1c47b003b4e1)
+<!-- TODO fix link -->
+<!-- ![OptiTrack Motive UI](https://github.com/user-attachments/assets/ed8eee6a-abea-4906-8596-1c47b003b4e1) -->
 
 We test the accuracy of head turn detection by comparing it with OptiTrack - a marker-based 3D tracking system.
 
@@ -87,7 +91,17 @@ The data is collected and analyzed in MATLAB:
 
 2. The model has a delay in running, hence the model data is shifted behind the OptiTrack data by around 500ms.
 
-# Body Tracking
+## MATLAB Setup
+
+The `matlab/` directory contains various scripts for live data collection and plotting:
+`live_capture.m` collects and plots data from OptiTrack and the phone model in realtime.
+It connects to OptiTrack via the OptiTrack MATLAB plugin (https://docs.optitrack.com/plugins/optitrack-matlab-plugin) and reads the rigidbody position and rotation of the face.
+Phone model data is sent via HTTP to the same webserver hosting the app, which then echoes the data via UDP to MATLAB. This design was chosen because:
+
+1. The app is already hosted by an HTTP server so sending data back to the PC via HTTP is trivial
+2. Receiving data in MATLAB is difficult via HTTP, but there is [official UDP support](https://in.mathworks.com/help/instrument/udp-interface.html)
+
+<!-- # Body Tracking
 
 The app uses the following javascript libraries:
 
@@ -95,14 +109,23 @@ The app uses the following javascript libraries:
 2. ml5.js bodypose (https://docs.ml5js.org/#/reference/bodypose) : which provides a simple API to actually use MoveNet in javascript
 3. p5.js (https://p5js.org/) for graphics functionality like video capture, canvas rendering
 
-The app is hosted on the [Github Pages](https://pages.github.com/) of this repo: https://jjbel.github.io/ml5-bodypose-example/
+The app is hosted on the [Github Pages](https://pages.github.com/) of this repo: https://jjbel.github.io/ml5-bodypose-example/ -->
 
-## Keypoints
+## Keypoints and Coordinate Systems
 
 ### BlazePose
 
+BlazePose estimates 33 keypoints of the entire human body in 3D.
+
+From the [BlazePose blog post](https://blog.tensorflow.org/2021/08/3d-pose-detection-with-mediapipe-blazepose-ghum-tfjs.html):
+
+> `keypoints3D` is an additional array with 33 keypoint objects, each object has x, y, z. The x, y, z are in meter units. The person is modeled as if they were in a 2m x 2m x 2m cubic space. The range for each axis goes from -1 to 1 (therefore 2m total delta). The origin of this 3D space is the hip center (0, 0, 0). From the origin, z is positive if moving closer to the camera, and negative if moving away from the camera.
+
+<details>
+
+<summary>List of keypoints</summary>
+
 ```
-BlazePose:
 0 nose
 1 left_eye_inner
 2 left_eye
@@ -137,6 +160,26 @@ BlazePose:
 31 left_foot_index
 32 right_foot_index
 ```
+
+</details>
+
+### facemesh
+
+From the [facemesh blog post](https://blog.tensorflow.org/2020/03/face-and-hand-tracking-in-browser-with-mediapipe-and-tensorflowjs.html) and [model card](https://drive.google.com/file/d/1VFC_wIpw4O7xBOiTgUldl79d9LA-LsnA/view):
+
+[mesh_map.jpg](https://raw.githubusercontent.com/tensorflow/tfjs-models/master/face-landmarks-detection/mesh_map.jpg) : list of facial landmarks with indices.
+
+facemesh outputs 3d coordinates of 468 landmarks.
+
+> x- and y-coordinates follow the image pixel
+> coordinates; z-coordinates are relative to the
+> face center of mass and are scaled
+> proportionally to the face width.
+
+This poses two issues:
+
+1. coordinates are in pixel-space not in real-world meters. So we only have a value proportional to real-world distances
+2. The z-coordinate of the face-centroid is zero, which means we cannot use it to estimate depth of the face as a whole, just relative depth of different landmarks.
 
 ## Todo
 
