@@ -1,6 +1,11 @@
-A web app to detect the body pose of a human occupant of a vehicle, and warn for unsafe positions in real-time. The app runs on a phone mounted in the interior of the car.
+This is a web app to detect the body pose of a human occupant of a vehicle, and warn for unsafe positions in real-time. The app runs on a phone mounted in the interior of the car.
 
-Try it now!: https://jjbel.github.io/ml5-bodypose-example/
+### Try it now!: https://jjbel.github.io/ml5-bodypose-example/
+
+https://github.com/user-attachments/assets/cef779b1-1e01-4884-8254-29dcbf54424f
+
+https://github.com/user-attachments/assets/e1dcc616-9ed5-46cd-b503-68abe0f11b84
+
 
 - [Testing with OptiTrack](#testing-with-optitrack)
 - [Body Tracking](#body-tracking)
@@ -15,6 +20,49 @@ Try it now!: https://jjbel.github.io/ml5-bodypose-example/
       - [MoveNet:](#movenet)
 
 ## Motivation
+
+According to a [survey](https://crashstats.nhtsa.dot.gov/Api/Public/Publication/812506) of vehicle crash causes conducted by the U.S. Department of Transportation, driver error was the critical reason for the crash in 94% of cases. Of these, 41% were recognition errors, such as driver’s inattention, internal and external distractions, and
+inadequate surveillance. 7% of driver errors were non-performance errors, for example due to sleep.
+
+The EU has [mandated](https://single-market-economy.ec.europa.eu/news/mandatory-drivers-assistance-systems-expected-help-save-over-25000-lives-2038-2024-07-05_en) driver assistance systems, including drowsiness detection, for all new vehicles from 2024.
+However this does not cover motorcycles, which are 25 times more deadly per kilometer traveled than passenger cars. Modern motorcycles have a lack of Advanced driver-assistance system (ADAS).
+ADAS systems are also not present in the majority of older vehicles. 
+
+An [IEEE report] (https://spectrum.ieee.org/partial-vehicle-autonomy-risk) discusses the risk of partial vehicle autonomy: occupants of cars with ADAS assume mistakenly believe that hands-free driving features can take full responsibility for driving, and take their hands off the wheel. 
+
+
+In India, there are 700,000 to 1 million food delivery workers on platforms like Zomato and Swiggy (according to [moneycontrol](https://www.moneycontrol.com/news/trends/more-than-a-third-of-food-delivery-workers-in-india-are-graduates-finds-survey-11278821.html )). These delivery workers ride 2-wheeler scooters, with an a phone mounted on the dashboard for navigation and tracking orders. They operate under [high-stress conditions](https://www.fortuneindia.com/business-news/racing-against-time-quick-commerce-is-pushing-delivery-riders-to-the-edge-claims-study/121714) (to cater to 15-minute delivery requirements) often throughout the night.
+
+Most vehicle occupants possess a smartphone with a web browser. This presents an opportunity to make driver-assistance systems accessible to a large population. Smartphones from the last decade are equipped with a high-resolution video camera, a Graphics Processing Unit (GPU) for video processing and Machine Learning inference, and a web browser for running cross-platform apps.
+
+## Our App
+
+We present a javascript web app, which can run offline on any device with a web browser. It runs a body pose estimation in realtime to detect and warn for dangerous seating positions such as:
+1. falling asleep (eyes closed)
+2. face too close to windshield
+3. not looking straight ahead
+4. knees on dashboard
+
+The is more intended be used as a general-purpose realtime markerless body-pose estimator, and can be mounted within a vehicle cabin or on a motorcycle. This replaces previous marker-based body tracking solutions such as OptiTrack  (which also require a multi-camera system which is difficult to mount within a vehicle) at the cost of slightly reduced tracking accuracy and latency (see benchmarks [below](#testing-with-optitrack))
+
+### Existing studies focussed on mobile driver safety:
+
+1. Wijnands, J.S., Thompson, J., Nice, K.A. et al. Real-time monitoring of driver drowsiness on mobile platforms using 3D neural networks. Neural Comput & Applic 32, 9731–9743 (2020). https://doi.org/10.1007/s00521-019-04506-0
+
+They developed a Tensorflow-based Android app for realtime drowsiness detection. This was before the release of the BlazePose and facemesh Tensorflow models in 2021.
+
+The app source code was not released. The app would not be able to be run on iOS devices.
+
+## App Architecture
+
+The app is a javascript web app.
+
+It utilises the [BlazePose](https://blog.tensorflow.org/2021/05/high-fidelity-pose-tracking-with-mediapipe-blazepose-and-tfjs.html) and [facemesh](https://blog.tensorflow.org/2020/03/face-and-hand-tracking-in-browser-with-mediapipe-and-tensorflowjs.html) ML models from Google's Tensorflow, for body tracking and face tracking respectively. These models were developed to run in real-time in the browser on a mobile device.
+
+The app can run on any device with a browser which has modern javascript support. This includes Android and iOS mobile phones, as well as windows and linux devices like Raspberry Pi's. Once downloaded, the app runs model inference locally, and hence offline.
+
+The app runs at 10Hz on an Apple iPhone 14 Pro (2022).
+
 
 # Testing with OptiTrack
 
