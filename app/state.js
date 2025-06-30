@@ -1,3 +1,5 @@
+DEBUG_DRAW = true;
+
 function vec2str(vec, precision = 2) {
   return `(${vec.x.toFixed(precision)}, ${vec.y.toFixed(precision)}, ${vec.z.toFixed(precision)})`;
 }
@@ -32,17 +34,20 @@ class State {
     // Load the bodyPose model
     this.bodyPose = ml5.bodyPose("BlazePose");
 
-    this.faceMesh = ml5.faceMesh({
-      maxFaces: 1,
-      // refineLandmarks: false,
-    });
+    // this.faceMesh = ml5.faceMesh({
+    // maxFaces: 1,
+    // refineLandmarks: false,
+    // });
   }
 
   setup() {
-    const size = min(windowWidth, windowHeight);
-    createCanvas(size, size, WEBGL);
+    if (DEBUG_DRAW) {
+      const size = min(windowWidth, windowHeight);
+      createCanvas(size, size, WEBGL);
+      debugMode();
+    }
+
     angleMode(DEGREES);
-    debugMode();
 
     // using ideal: max is "not officially supported" according to ChatGPT, but it works in Chrome on Windows
     // In Firefox: DOMException: Failed to allocate videosource
@@ -57,6 +62,11 @@ class State {
       audio: false,
     };
     this.video = createCapture(constraints);
+
+    if (!DEBUG_DRAW) {
+      this.video.hide();
+    }
+
     this.infoElement = select("#info");
     this.warningElement = select("#warning");
     this.saveElement = select("#save");
@@ -68,50 +78,52 @@ class State {
       this.body_detection();
     });
 
-    this.faceMesh.detectStart(this.video, faces => {
-      // faces can be empty if no face detected, even if the callback is called
-      if (faces.length === 0) {
-        return;
-      }
-      //   TODO could choose face with highest confidence
-      this.face = faces[0];
+    // this.faceMesh.detectStart(this.video, faces => {
+    //   // faces can be empty if no face detected, even if the callback is called
+    //   if (faces.length === 0) {
+    //     return;
+    //   }
+    //   //   TODO could choose face with highest confidence
+    //   this.face = faces[0];
 
-      // order of operations seems to be face callback - draw() - screen_update
-      // so any drawing here in callback gets cleared by background() call in draw
+    //   // order of operations seems to be face callback - draw() - screen_update
+    //   // so any drawing here in callback gets cleared by background() call in draw
 
-      this.face.keypoints = this.face.keypoints.map(point =>
-        createVector(point.x, point.y, point.z)
-      );
+    //   this.face.keypoints = this.face.keypoints.map(point =>
+    //     createVector(point.x, point.y, point.z)
+    //   );
 
-      // this.face.keypoints = this.face.keypoints.map(point => p5.Vector.div(point, this.get_eye_dist()));
+    //   // this.face.keypoints = this.face.keypoints.map(point => p5.Vector.div(point, this.get_eye_dist()));
 
-      if (this.initial_neck_centre_requested) {
-        this.initial_neck_centre = this.get_neck_centre();
-        this.initial_neck_centre_requested = false;
-      }
+    //   if (this.initial_neck_centre_requested) {
+    //     this.initial_neck_centre = this.get_neck_centre();
+    //     this.initial_neck_centre_requested = false;
+    //   }
 
-      // this.head_detection();
-    });
+    //   // this.head_detection();
+    // });
 
     // Get the skeleton connection information
     this.connections = this.bodyPose.getSkeleton();
-    this.triangle_mesh = this.faceMesh.getTriangles();
+    // this.triangle_mesh = this.faceMesh.getTriangles();
 
     this.CONFIDENCE_THRESHOLD = 0.1;
 
-    let button_centre = createButton("Centre Face");
-    button_centre.mousePressed(() => {
-      this.initial_neck_centre_requested = true;
-    });
+    // let button_centre = createButton("Centre Face");
+    // button_centre.mousePressed(() => {
+    //   this.initial_neck_centre_requested = true;
+    // });
     // button_centre.position(200, 200);
     // button_centre.style("font-size", "40px");
   }
 
   draw() {
+    if (!DEBUG_DRAW) {
+      return;
+    }
     scale(height / 2);
     orbitControl();
-    background(10, 0, 20);
-
+    background(10, 10, 10);
     // this.drawFace();
     this.drawSkeleton();
 
@@ -302,9 +314,8 @@ class State {
     );
     const mean = p5.Vector.div(sum, names.length);
     const nose = this.keypointPos("nose");
-    console.log(vec2str(mean));
-    this.infoElement.html(vec2str(nose));
+    this.infoElement.html(`Head Position: ${vec2str(mean)}`);
 
-    postMessage(floatsToBlob(Date.now(), nose.x, nose.y, nose.z));
+    postMessage(floatsToBlob(Date.now(), mean.x, mean.y, mean.z));
   }
 }

@@ -228,7 +228,7 @@ function CreatePlots(total_time)
     m_line_z.MaximumNumPoints = point_count;
     m_line_z.Marker = '.';
     m_line_z.LineWidth = 3;
-    m_line_z.Color = [1 0 1];
+    m_line_z.Color = [0 0 1];
 
     fontsize(scale = 1.6)
     % TODO legend not working

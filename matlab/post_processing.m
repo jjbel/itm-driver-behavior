@@ -8,7 +8,7 @@ optitrack_files = dir('./optitrack *.csv');
 [~, index] = max([optitrack_files.datenum]);
 optitrack_file = fullfile(optitrack_files(index).folder, optitrack_files(index).name);
 
-% or set manually:de
+% or set manually:
 % model_file=""
 % optitrack_file=""
 model_data = readmatrix(model_file)';
