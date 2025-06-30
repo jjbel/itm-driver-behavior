@@ -65,6 +65,7 @@ class State {
     this.bodyPose.detectStart(this.video, poses => {
       // TODO could choose pose with highest confidence
       this.pose = poses[0];
+      this.body_detection();
     });
 
     this.faceMesh.detectStart(this.video, faces => {
@@ -89,7 +90,7 @@ class State {
         this.initial_neck_centre_requested = false;
       }
 
-      this.head_detection();
+      // this.head_detection();
     });
 
     // Get the skeleton connection information
@@ -102,8 +103,8 @@ class State {
     button_centre.mousePressed(() => {
       this.initial_neck_centre_requested = true;
     });
-    button_centre.position(200, 200);
-    button_centre.style("font-size", "40px");
+    // button_centre.position(200, 200);
+    // button_centre.style("font-size", "40px");
   }
 
   draw() {
@@ -111,8 +112,8 @@ class State {
     orbitControl();
     background(10, 0, 20);
 
-    this.drawFace();
-    // this.drawSkeleton();
+    // this.drawFace();
+    this.drawSkeleton();
 
     // const dims = `video: ${this.video.width}x${this.video.height}\ncanvas: ${width}x${height}\nWindow: ${windowWidth}x${windowHeight}`;
     // this.infoElement.html(dims);
@@ -196,7 +197,7 @@ class State {
       if (keypoint.confidence > 0.1) {
         push();
         translate(keypoint.x, keypoint.y, keypoint.z);
-        box(0.09);
+        box(0.05);
         pop();
       }
     }
@@ -252,29 +253,58 @@ class State {
     postMessage(floatsToBlob(Date.now(), -neck_centre.y, neck_centre.x));
   }
 
-  head_turn_detection() {
+  body_detection() {
+    const names = [
+      "nose",
+      "left_eye_inner",
+      "left_eye",
+      "left_eye_outer",
+      "right_eye_inner",
+      "right_eye",
+      "right_eye_outer",
+      "left_ear",
+      "right_ear",
+      "mouth_left",
+      "mouth_right",
+      // "left_shoulder",
+      // "right_shoulder",
+      // "left_elbow",
+      // "right_elbow",
+      // "left_wrist",
+      // "right_wrist",
+      // "left_pinky",
+      // "right_pinky",
+      // "left_index",
+      // "right_index",
+      // "left_thumb",
+      // "right_thumb",
+      // "left_hip",
+      // "right_hip",
+      // "left_knee",
+      // "right_knee",
+      // "left_ankle",
+      // "right_ankle",
+      // "left_heel",
+      // "right_heel",
+      // "left_foot_index",
+      // "right_foot_index",
+    ];
+
+    for (const name of names) {
+      if (!this.keypointPos(name)) {
+        return;
+      }
+    }
+
+    const sum = names.reduce(
+      (accumulator, currentValue) => p5.Vector.add(accumulator, this.keypointPos(currentValue)),
+      createVector(0, 0, 0)
+    );
+    const mean = p5.Vector.div(sum, names.length);
     const nose = this.keypointPos("nose");
+    console.log(vec2str(mean));
+    this.infoElement.html(vec2str(nose));
 
-    if (!nose) {
-      return;
-    }
-
-    const heading = this.heading;
-
-    if (!this.min_heading || !this.max_heading) {
-      return;
-    }
-
-    const relative_turn = map(heading, this.min_heading, this.max_heading, 0, 90);
-
-    // message format: float64:timestamp float64:value
-    postMessage(floatsToBlob(Date.now(), relative_turn));
-
-    let str = `Min: ${this.min_heading.toFixed(2)} | Max: ${this.max_heading.toFixed(
-      2
-    )} | Cur: ${heading.toFixed(2)} | Scaled: ${relative_turn.toFixed(2)}`;
-    let warning = "";
-
-    this.infoElement.html(str);
+    postMessage(floatsToBlob(Date.now(), nose.x, nose.y, nose.z));
   }
 }
