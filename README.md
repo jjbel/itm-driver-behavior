@@ -1,3 +1,5 @@
+# ITM Body Pose Warning
+
 This is a web app to detect the body pose of a human occupant of a vehicle, and warn for unsafe positions in real-time. The app runs on a phone mounted in the interior of the car.
 
 ### Try it now!: https://jjbel.github.io/ml5-bodypose-example/
@@ -6,22 +8,24 @@ https://github.com/user-attachments/assets/cef779b1-1e01-4884-8254-29dcbf54424f
 
 https://github.com/user-attachments/assets/e1dcc616-9ed5-46cd-b503-68abe0f11b84
 
-- [Motivation](#motivation)
-- [Our App](#our-app)
-  - [Existing studies focussed on mobile driver safety:](#existing-studies-focussed-on-mobile-driver-safety)
-- [App Architecture](#app-architecture)
-- [Benchmarking with OptiTrack](#benchmarking-with-optitrack)
-- [MATLAB Setup](#matlab-setup)
-- [Keypoints and Coordinate Systems](#keypoints-and-coordinate-systems)
-  - [BlazePose](#blazepose)
-  - [facemesh](#facemesh)
-- [Todo](#todo)
-- [Other Pose Detection Approaches tried](#other-pose-detection-approaches-tried)
-  - [1. ARKit](#1-arkit)
-  - [2. OpenPose](#2-openpose)
-  - [3. ml5.js bodypose](#3-ml5js-bodypose)
-  - [Further Reading](#further-reading)
-    - [MoveNet:](#movenet)
+- [ITM Body Pose Warning](#itm-body-pose-warning)
+    - [Try it now!: https://jjbel.github.io/ml5-bodypose-example/](#try-it-now-httpsjjbelgithubioml5-bodypose-example)
+  - [Motivation](#motivation)
+  - [Our App](#our-app)
+    - [Existing studies focussed on mobile driver safety:](#existing-studies-focussed-on-mobile-driver-safety)
+  - [App Architecture](#app-architecture)
+  - [Benchmarking with OptiTrack](#benchmarking-with-optitrack)
+  - [MATLAB Setup](#matlab-setup)
+  - [Keypoints and Coordinate Systems](#keypoints-and-coordinate-systems)
+    - [BlazePose](#blazepose)
+    - [facemesh](#facemesh)
+  - [Todo](#todo)
+  - [Other Pose Detection Approaches tried](#other-pose-detection-approaches-tried)
+    - [1. ARKit](#1-arkit)
+    - [2. OpenPose](#2-openpose)
+    - [3. ml5.js bodypose](#3-ml5js-bodypose)
+    - [Further Reading](#further-reading)
+      - [MoveNet:](#movenet)
 
 ## Motivation
 
@@ -48,6 +52,8 @@ We present a javascript web app, which can run offline on any device with a web 
 4. knees on dashboard
 
 The app is also intended be used as a general-purpose realtime markerless body-pose estimator. It can run on a phone mounted within a vehicle cabin or on a motorcycle. This replaces previous marker-based body tracking solutions such as OptiTrack (which also require a multi-camera system which is difficult to mount within a vehicle) at the cost of slightly reduced tracking accuracy and latency (see benchmarks [below](#benchmarking-with-optitrack))
+
+The app was developed as part of a project at the [ITM](https://www.itm.uni-stuttgart.de/en/) (Institute of Engineering and Computational Mechanics) at the University of Stuttgart. The app was tested on the ITM Driving Simulator.
 
 ### Existing studies focussed on mobile driver safety:
 
@@ -183,10 +189,17 @@ This poses two issues:
 
 ## Todo
 
-1. Integrate a biomechanical model
-2. Try to select a wide-angle lens of the phone
-3. Make the app usable offline after downloading (eg by doing "Add to Home screen" from the browser)
-4. figure out why 2 huge delays, one when loading, other before camera feed starts
+App:
+1. increase fps to the >30fps possible with BlazePose
+2. figure out why 2 huge delays, one when loading, other before camera feed starts
+3. try to select a wide-angle lens of the phone
+4. improve UI usability: add a reload button, a button to toggle debug graphics, and more instructions for the user
+5. Make the app usable offline after downloading (eg by doing "Add to Home screen" from the browser)
+
+Testing:
+1. Test Jonas' MOR model in comparison with actual body movement measured with the app
+2. Test more driving scenarios in BeamNG
+3. Give a simple pulse to the motion platform to study whiplash
 
 ---
 
