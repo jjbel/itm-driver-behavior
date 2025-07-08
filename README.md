@@ -2,17 +2,17 @@
 
 This is a web app to detect the body pose of a human occupant of a vehicle, and warn for unsafe positions in real-time. The app runs on a phone mounted in the interior of the car.
 
-### Try it now!: https://jjbel.github.io/ml5-bodypose-example/
+### Try it now!: https://jjbel.github.io/itm-driver-behavior/
 
 https://github.com/user-attachments/assets/cef779b1-1e01-4884-8254-29dcbf54424f
 
 https://github.com/user-attachments/assets/e1dcc616-9ed5-46cd-b503-68abe0f11b84
 
 - [ITM Body Pose Warning](#itm-body-pose-warning)
-    - [Try it now!: https://jjbel.github.io/ml5-bodypose-example/](#try-it-now-httpsjjbelgithubioml5-bodypose-example)
+    - [Try it now!: https://jjbel.github.io/itm-driver-behavior/](#try-it-now-httpsjjbelgithubioitm-driver-behavior)
   - [Motivation](#motivation)
   - [Our App](#our-app)
-    - [Existing studies focussed on mobile driver safety:](#existing-studies-focussed-on-mobile-driver-safety)
+    - [Prior studies on mobile driver safety:](#prior-studies-on-mobile-driver-safety)
   - [App Architecture](#app-architecture)
   - [Benchmarking with OptiTrack](#benchmarking-with-optitrack)
   - [MATLAB Setup](#matlab-setup)
@@ -24,44 +24,42 @@ https://github.com/user-attachments/assets/e1dcc616-9ed5-46cd-b503-68abe0f11b84
     - [1. ARKit](#1-arkit)
     - [2. OpenPose](#2-openpose)
     - [3. ml5.js bodypose](#3-ml5js-bodypose)
+  - [References](#references)
     - [Further Reading](#further-reading)
       - [MoveNet:](#movenet)
 
 ## Motivation
 
-According to a [survey](https://crashstats.nhtsa.dot.gov/Api/Public/Publication/812506) of vehicle crash causes conducted by the U.S. Department of Transportation, driver error was the critical reason for the crash in 94% of cases. Of these, 41% were recognition errors, such as driver’s inattention, internal and external distractions, and
-inadequate surveillance. 7% of driver errors were non-performance errors, for example due to sleep.
+Driver error is the critical reason for 94% of vehicle crashes [[1]](#1). 41% of these are due to recognition errors, such as driver’s inattention, distractions, and inadequate surveillance. 7% of driver errors were due to sleep.
 
-The EU has [mandated](https://single-market-economy.ec.europa.eu/news/mandatory-drivers-assistance-systems-expected-help-save-over-25000-lives-2038-2024-07-05_en) driver assistance systems, including drowsiness detection, for all new vehicles from 2024.
-However this does not cover motorcycles, which are 25 times more deadly per kilometer traveled than passenger cars. Modern motorcycles have a lack of Advanced driver-assistance system (ADAS).
-ADAS systems are also not present in the majority of older vehicles.
+The EU has mandated [[2]](#2) driver assistance systems like drowsiness detection, for all new vehicles from 2024.
+But the average car age is ~13 years [[3]](#3). ADAS is rarely present on older vehicles. If it is present, ADAS is usually focused on surrounding vehicles (for example for collision detection), but does not monitor the occupants. 
 
-An [IEEE report] (https://spectrum.ieee.org/partial-vehicle-autonomy-risk) discusses the risk of partial vehicle autonomy: occupants of cars with ADAS assume mistakenly believe that hands-free driving features can take full responsibility for driving, and take their hands off the wheel.
+2-wheelers are 25 times more deadly per kilometer traveled than passenger cars. ADAS migration to 2-wheelers is even more delayed due to the lack of powered controls and passenger restraints, and the far more extensive role of the rider in vehicle dynamics. Bosch introduced a radar-based cruise control for motorcycles as late as 2021. But there are almost no data collection systems for the status of the human rider [[4]](#4).
 
-In India, there are 700,000 to 1 million food delivery workers on platforms like Zomato and Swiggy (according to [moneycontrol](https://www.moneycontrol.com/news/trends/more-than-a-third-of-food-delivery-workers-in-india-are-graduates-finds-survey-11278821.html)). These delivery workers ride 2-wheeler scooters, with an a phone mounted on the dashboard for navigation and tracking orders. They operate under [high-stress conditions](https://www.fortuneindia.com/business-news/racing-against-time-quick-commerce-is-pushing-delivery-riders-to-the-edge-claims-study/121714) (to cater to 15-minute delivery requirements) often throughout the night.
+In India, food delivery services employ 700,000 to 1 million workers. These delivery workers ride 2-wheeler scooters, with an a phone mounted on the dashboard for navigation and tracking orders. They operate under high-stress conditions (to cater to 15-minute delivery requirements) often throughout the night [[5]](#5).
+
+An IEEE report [[6]](#6) discusses the risk of partial vehicle autonomy: occupants of cars with ADAS assume mistakenly believe that hands-free driving features can take full responsibility for driving, and take their hands off the wheel. Thus it is imperative to monitor the behavior of occupants of autonomous vehicles.
 
 Most vehicle occupants possess a smartphone with a web browser. This presents an opportunity to make driver-assistance systems accessible to a large population. Smartphones from the last decade are equipped with a high-resolution video camera, a Graphics Processing Unit (GPU) for video processing and Machine Learning inference, and a web browser for running cross-platform apps.
 
 ## Our App
 
-We present a javascript web app, which can run offline on any device with a web browser. It runs a body pose estimation in realtime to detect and warn for dangerous seating positions such as:
-
+We present a driver safety monitoring app, which can run offline on any device with a web browser. It especially targets Android and iPhone users, It runs a body pose estimation in real-time to detect and warn for unsafe behaviour such as:
 1. falling asleep (eyes closed)
-2. face too close to windshield
-3. not looking straight ahead
-4. knees on dashboard
+2. leaning forward (face too close to windshield)
+3. distracted from the road (not looking straight ahead)
+4. knees on dashboard (causes dashboard knee injury)
 
-The app is also intended be used as a general-purpose realtime markerless body-pose estimator. It can run on a phone mounted within a vehicle cabin or on a motorcycle. This replaces previous marker-based body tracking solutions such as OptiTrack (which also require a multi-camera system which is difficult to mount within a vehicle) at the cost of slightly reduced tracking accuracy and latency (see benchmarks [below](#benchmarking-with-optitrack))
+The app is also intended be used as a general-purpose research tool for real-time markerless body-pose estimation. It can run on a phone mounted within a vehicle cabin or on a motorcycle. This replaces previous marker-based body tracking solutions such as OptiTrack (which require a multi-camera system, difficult to mount within a vehicle). This comes at the cost of slightly reduced tracking accuracy and latency (see benchmarks [below](#benchmarking-with-optitrack))
 
 The app was developed as part of a project at the [ITM](https://www.itm.uni-stuttgart.de/en/) (Institute of Engineering and Computational Mechanics) at the University of Stuttgart. The app was tested on the ITM Driving Simulator.
 
-### Existing studies focussed on mobile driver safety:
+### Prior studies on mobile driver safety:
 
 1. Wijnands, J.S., Thompson, J., Nice, K.A. et al. Real-time monitoring of driver drowsiness on mobile platforms using 3D neural networks. Neural Comput & Applic 32, 9731–9743 (2020). https://doi.org/10.1007/s00521-019-04506-0
 
-They developed a Tensorflow-based Android app for realtime drowsiness detection. This was before the release of the BlazePose and facemesh Tensorflow models in 2021.
-
-The app source code was not released. The app would not be able to be run on iOS devices.
+The authors developed a Tensorflow-based Android app for realtime drowsiness detection. This was before the release of the BlazePose and facemesh Tensorflow models in 2021. However the app source code was not released. Additionally, the app does not support iOS devices.
 
 ## App Architecture
 
@@ -247,6 +245,21 @@ ml5.js bodypose is attractive because:
 2. The models provide 3d pose detection without the need for a depth camera.
 3. The models run in realtime on modern phone hardware
 4. The API is relatively simple to use
+
+## References
+<a id="1">[1]</a> US Department of Transportation National Highway Traffic Safety Administration, "Critical Reasons for Crashes Investigated in the National Motor Vehicle Crash Causation Survey", https://crashstats.nhtsa.dot.gov/Api/Public/Publication/812506, March 2018
+
+<a id="2">[2]</a> European Commission, "Mandatory drivers assistance systems expected to help save over 25,000 lives by 2038", https://single-market-economy.ec.europa.eu/news/mandatory-drivers-assistance-systems-expected-help-save-over-25000-lives-2038-2024-07-05_en, 5 July 2024
+
+<a id="3">[3]</a> Hedges & Company, "Average Age of Cars On The Road by Year", https://hedgescompany.com/blog/2024/02/average-age-of-cars-trucks, February 2024
+
+<a id="5">[5]</a> SAE International, "Motorcycles enter the ADAS age", https://www.sae.org/news/2021/02/motorcycles-enter-the-adas-age, 10 February 2021
+
+<a id="5">[5]</a> Fortune India, "Racing against time: Quick commerce is pushing delivery riders to the edge, claims study",  https://www.fortuneindia.com/business-news/racing-against-time-quick-commerce-is-pushing-delivery-riders-to-the-edge-claims-study/121714, 9 April 2025
+
+<a id="6">[6]</a> IEEE Spectrum, "Partial Automation Doesn't Make Vehicles Safer", https://spectrum.ieee.org/partial-vehicle-autonomy-risk, 2 October 2024
+
+<a id="7">[7]</a> 
 
 ### Further Reading
 
